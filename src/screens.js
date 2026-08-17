@@ -3,9 +3,8 @@
 // All DOM rather than canvas, for the same reason the dialogue box is: text
 // that has to be read on a phone should be real text.
 
-import { FIELD_ORDER, PLATFORM_ORDER, NPC_CONTENT } from './content.js';
-import { run, fieldCount, platformCount, isComplete } from './progress.js';
-import { ROUTE_GATE_REQUIREMENT, CEILING_REQUIREMENT, OFFICE_REQUIREMENT } from './progress.js';
+import { NPC_ORDER, NPC_CONTENT } from './content.js';
+import { run, badgeCount, isComplete } from './progress.js';
 
 let el = {};
 let toastTimer = null;
@@ -63,33 +62,22 @@ export function isQuestLogOpen() {
   return el.panel.classList.contains('visible');
 }
 
-function questRows(ids, done, lockedWhen) {
-  return ids.map(id => {
+function paintQuestLog() {
+  const rows = NPC_ORDER.map(id => {
     const c = NPC_CONTENT[id];
-    const got = done.includes(id);
-    const locked = !got && lockedWhen(id);
-    const mark = got ? '\u2605' : locked ? '\ud83d\udd12' : '\u2606';
-    const cls = [got ? 'got' : '', locked ? 'locked' : ''].filter(Boolean).join(' ');
-    const note = got ? c.badge : locked ? 'Locked' : 'Not yet visited';
+    const got = run.badges.includes(id);
+    const locked = id === 'multigres' && !run.gateOpen && !got;
+    const mark = got ? '★' : locked ? '🔒' : '☆';
+    const cls = got ? 'got' : locked ? 'locked' : '';
+    const note = got ? c.badge : locked ? 'Locked — earn five badges' : 'Not yet visited';
     return `<li class="${cls}"><span class="mark">${mark}</span>
       <span class="who">${c.name}</span><span class="note">${note}</span></li>`;
   }).join('');
-}
 
-function paintQuestLog() {
   el.panelInner.innerHTML = `
-    <h2>Laura &mdash; ${run.title}</h2>
-    <p class="sub">${run.score} points</p>
-
-    <h3 class="track-head field">Route 1 &mdash; The Field
-      <span>${fieldCount()}/${FIELD_ORDER.length}</span></h3>
-    <ul class="quests">${questRows(FIELD_ORDER, run.field, () => false)}</ul>
-
-    <h3 class="track-head platform">Route 2 &mdash; The Work I Want
-      <span>${platformCount()}/${PLATFORM_ORDER.length}</span></h3>
-    <ul class="quests">${questRows(PLATFORM_ORDER, run.platform,
-      id => !run.routeOpen || (id === 'ceiling' && !run.gateOpen))}</ul>
-
+    <h2>Supabase Certification</h2>
+    <p class="sub">${badgeCount()}/6 badges · ${run.score} points</p>
+    <ul class="quests">${rows}</ul>
     <button class="close" data-close="panel">Close</button>
   `;
   el.panelInner.querySelector('[data-close="panel"]').addEventListener('click', closeQuestLog);
@@ -100,24 +88,12 @@ function paintQuestLog() {
 // posts a recommendation. Both are optional — without Supabase configured the
 // screen still works, minus those blocks.
 export function showResults({ onPlayAgain, onHome, save = null, recommend = null }) {
-  const dots = (n, total, cls) => `<span class="dots ${cls}">` +
-    Array.from({length: total}, (_, i) => `<i class="${i < n ? 'on' : ''}"></i>`).join('') +
-    `</span>`;
-
+  const badges = run.badges.map(id => `<li>★ ${NPC_CONTENT[id].badge}</li>`).join('');
   el.resultsInner.innerHTML = `
-    <h2>${run.title}</h2>
-    <div class="result-tracks">
-      <div class="track field"><span class="track-label">FIELD</span>
-        ${dots(fieldCount(), FIELD_ORDER.length, 'field')}
-        <span class="track-count">${fieldCount()}/${FIELD_ORDER.length}</span></div>
-      <div class="track platform"><span class="track-label">PLATFORM</span>
-        ${dots(platformCount(), PLATFORM_ORDER.length, 'platform')}
-        <span class="track-count">${platformCount()}/${PLATFORM_ORDER.length}</span></div>
-    </div>
+    <h2>CERTIFIED</h2>
     <p class="score">${run.score} <span>points</span></p>
-    <blockquote class="sendoff">Five in the field.<br>Six on the platform.<br>
-      Now go build something in a weekend.<cite>&mdash; Laura</cite></blockquote>
-    <p class="note">${isComplete() ? '' : 'Run ended early.'}</p>
+    <ul class="badges">${badges}</ul>
+    <p class="note">${isComplete() ? 'All six badges. One database, zero lock-in.' : 'Run ended early.'}</p>
     <p id="saveStatus" class="save" role="status" aria-live="polite"></p>
     ${recommend ? `
       <div class="rec-box">

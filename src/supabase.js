@@ -160,15 +160,10 @@ export function suggestedAvatar(user) {
 
 // ---------------------------------------------------------------- scores
 
-export async function submitScore(userId, score, platformBadges, fieldBadges) {
+export async function submitScore(userId, score, badges) {
   const c = await getClient();
   if (!c) return { error: { message: 'Not configured' } };
-  const { error } = await safe(() => c.from('scores').insert({
-    user_id: userId,
-    score,
-    platform_badges: platformBadges,
-    field_badges: fieldBadges
-  }));
+  const { error } = await safe(() => c.from('scores').insert({ user_id: userId, score, badges }));
   return { error };
 }
 
@@ -176,7 +171,7 @@ export async function topScores(limit = 10) {
   const c = await getClient();
   if (!c) return { data: [], error: null };
   const { data, error } = await safe(() => c.from('leaderboard')
-    .select('id, score, platform_badges, field_badges, completed_at, display_name')
+    .select('id, score, badges, completed_at, display_name')
     .limit(limit), []);
   return { data: data || [], error };
 }

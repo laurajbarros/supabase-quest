@@ -10,13 +10,9 @@ import * as screens from './screens.js';
 import * as progress from './progress.js';
 import { setMonochrome, isMonochrome, TS } from './painter.js';
 import { player, update as updatePlayer, facingTile, resetPlayer } from './player.js';
+import { NPCS, END_SIGN, GATE, npcAt, rebuildCollision } from './map.js';
 import {
-  NPCS, END_SIGN, SPAWN_SIGN, GATE, ROUTE_GATE, OFFICE_DOOR, npcAt, rebuildCollision
-} from './map.js';
-import {
-  NPC_CONTENT, FIELD_ORDER, PLATFORM_ORDER, NUDGES, TITLES,
-  END_SIGN_BEATS, SPAWN_SIGN_BEATS, BRIDGE_BEATS,
-  GATE_LOCKED_BEATS, ROUTE_LOCKED_BEATS, OFFICE_LOCKED_BEATS
+  NPC_CONTENT, NPC_ORDER, NUDGES, END_SIGN_BEATS, GATE_LOCKED_BEATS
 } from './content.js';
 import { sfx, isMuted, setMuted } from './audio.js';
 import * as landing from './landing.js';
@@ -40,13 +36,13 @@ function entities() {
 }
 
 // Everything you can walk up to and press A on. Derived from the same rule the
-// interaction uses, so a marker can never promise something the game doesn't
-// do. Anything already finished loses its marker.
+// interaction itself uses, so a marker can never promise something the game
+// doesn't do. Anything already finished loses its marker.
 function interactables() {
   const out = NPCS
-    .filter(n => !progress.hasBadge(n.id) && !(n.id === 'closing' && !progress.run.officeOpen))
+    .filter(n => !progress.hasBadge(n.id))
     .map(n => ({ x: n.x, y: n.y }));
-  out.push({ x: END_SIGN.x, y: END_SIGN.y }, { x: SPAWN_SIGN.x, y: SPAWN_SIGN.y });
+  out.push({ x: END_SIGN.x, y: END_SIGN.y });
   return out;
 }
 
@@ -56,17 +52,8 @@ function targetInFront() {
   const f = facingTile();
   const npc = npcAt(f.x, f.y);
   if (npc) return { kind: 'npc', npc };
-  if (f.x === END_SIGN.x && f.y === END_SIGN.y) return { kind: 'sign', beats: END_SIGN_BEATS, name: 'SIGN' };
-  if (f.x === SPAWN_SIGN.x && f.y === SPAWN_SIGN.y) return { kind: 'sign', beats: SPAWN_SIGN_BEATS, name: 'SIGN' };
-  if (f.x === ROUTE_GATE.x && f.y === ROUTE_GATE.y && !progress.run.routeOpen) {
-    return { kind: 'sign', beats: ROUTE_LOCKED_BEATS, name: 'GATE' };
-  }
-  if (f.x === GATE.x && f.y === GATE.y && !progress.run.gateOpen) {
-    return { kind: 'sign', beats: GATE_LOCKED_BEATS, name: 'NOTICE' };
-  }
-  if (f.x === OFFICE_DOOR.x && f.y === OFFICE_DOOR.y && !progress.run.officeOpen) {
-    return { kind: 'sign', beats: OFFICE_LOCKED_BEATS, name: 'DOOR' };
-  }
+  if (f.x === END_SIGN.x && f.y === END_SIGN.y) return { kind: 'sign' };
+  if (f.x === GATE.x && f.y === GATE.y && !progress.run.gateOpen) return { kind: 'gate' };
   return null;
 }
 
@@ -75,45 +62,29 @@ function interact() {
   if (!target) return;
 
   if (target.kind === 'sign') {
-    openTalk(target.beats, { name: target.name, speaker: 'sign' });
+    openTalk(END_SIGN_BEATS, { name: 'SIGN', speaker: 'sign' });
+    return;
+  }
+  if (target.kind === 'gate') {
+    openTalk(GATE_LOCKED_BEATS, { name: 'NOTICE', speaker: 'sign' });
     return;
   }
 
   const npc = target.npc;
   const content = NPC_CONTENT[npc.id];
-  if (!content) return;
 
+  // Multigres is behind the hoarding; you can't reach it before the gate opens,
+  // so no locked branch is needed here.
   if (progress.hasBadge(npc.id)) {
-    openTalk([`${content.badge} — done. Go on, then.`], { name: content.name });
+    // Already certified — a short acknowledgement rather than the whole talk
+    // again, which would be tedious on a replay.
+    openTalk([`${content.badge} badge earned. Go on, then.`], { name: content.name });
     return;
   }
 
-  // No quiz: the hidden NPC and the closing room are told, not tested.
-  if (!content.quiz) {
-    openTalk(content.beats, {
-      name: content.name,
-      onDone: () => finishNpc(npc, { correct: false })
-    });
-    return;
-  }
-
-  const isField = content.route === 1;
   openTalk(content.beats, {
     name: content.name,
-    quiz: {
-      ...content.quiz,
-      // Route 1 asks for judgment, so a wrong answer is met with "that's what
-      // most people try" and the story of what happened when we did. Route 2
-      // asks about facts, so it gets the fact. Both then hear the reveal.
-      resolve: (correct, answer) => {
-        const opening = correct
-          ? ['✅ That\'s the call.']
-          : isField
-            ? ['That\'s what most people try.', 'Here\'s what happened when we did.']
-            : [`Not quite — ${answer}.`];
-        return [...opening, ...(content.reveal || []), ...(content.beyond || [])];
-      }
-    },
+    quiz: content.quiz || null,
     onDone: result => finishNpc(npc, result)
   });
 }
@@ -130,101 +101,55 @@ function finishNpc(npc, { correct }) {
   if (content.secret) {
     progress.markSeen(npc.id);
     screens.toast('You found something that isn\'t on the map.');
+    updateHud();
     return;
   }
 
-  // The closing room ends the run.
-  if (npc.id === 'closing') {
-    progress.markSeen(npc.id);
-    setTimeout(showResults, 600);
-    return;
-  }
-
-  const result = progress.award(npc.id, correct);
-  if (!result.badge) return;
+  const { badge, gateJustOpened } = progress.award(npc.id, correct);
+  if (!badge) return;
 
   sfx.badge();
-  const points = correct ? 100 : (result.isField ? 50 : 25);
-  screens.toast(`Badge earned: ${content.badge} · +${points}`);
+  screens.toast(`Badge earned: ${content.badge} · +${correct ? 100 : 50}`);
   updateHud();
 
-  if (result.promotion) {
+  if (gateJustOpened) {
+    rebuildCollision({ gateOpen: true });
+    render.bakeMap();
+    // Delayed so it doesn't collide with the badge toast.
     setTimeout(() => {
       sfx.unlock();
-      flashPromotion();
-      screens.toast(`PROMOTED — ${result.promotion}`, 3200);
-    }, 1800);
+      screens.toast('The hoarding at the eastern edge comes down.');
+    }, 2200);
   }
 
-  applyGates(result);
-
-  if (progress.isComplete() && progress.hasSeen('closing')) {
+  if (progress.isComplete()) {
     setTimeout(showResults, 1400);
     return;
   }
   nudge();
 }
 
-// Rebuild collision and re-bake the map whenever a gate opens, and say so.
-function applyGates(result) {
-  const { routeOpen, gateOpen, officeOpen } = progress.run;
-  if (!result.routeJustOpened && !result.gateJustOpened && !result.officeJustOpened) return;
-
-  rebuildCollision({ routeOpen, gateOpen, officeOpen });
-  render.bakeMap();
-
-  const delay = result.promotion ? 3600 : 2200;
-  setTimeout(() => {
-    sfx.unlock();
-    if (result.routeJustOpened) {
-      // The bridge beat: the reason Route 1 leads to Route 2 at all.
-      openTalk(BRIDGE_BEATS, {
-        name: 'Laura',
-        onDone: () => {
-          progress.setTitle(TITLES.route2);
-          flashPromotion();
-          updateHud();
-          screens.toast('The gate south is open. → ROUTE 2', 3200);
-          nudge();
-        }
-      });
-    } else if (result.gateJustOpened) {
-      screens.toast('The hoarding at the eastern edge comes down.');
-    } else if (result.officeJustOpened) {
-      screens.toast('A door opened past Route 2.');
-    }
-  }, delay);
-}
-
 function nudge() {
   const next = progress.nextTarget();
-  if (next && NUDGES[next]) screens.setObjective(NUDGES[next]);
-  else if (progress.run.officeOpen && !progress.hasSeen('closing')) {
-    screens.setObjective('There is a room past Route 2. Someone is waiting.');
-  }
+  if (!next) return;
+  screens.setObjective(NUDGES[next]);
 }
 
 // ---------------------------------------------------------------- HUD
 
-function paintDots(el, count, total) {
-  el.innerHTML = Array.from({ length: total },
-    (_, i) => `<i class="${i < count ? 'on' : ''}"></i>`).join('');
-}
-
 function updateHud() {
-  document.getElementById('hudTitle').textContent = progress.run.title;
-  paintDots(document.getElementById('fieldDots'), progress.fieldCount(), FIELD_ORDER.length);
-  paintDots(document.getElementById('platformDots'), progress.platformCount(), PLATFORM_ORDER.length);
-  document.getElementById('fieldCount').textContent = `${progress.fieldCount()}/${FIELD_ORDER.length}`;
-  document.getElementById('platformCount').textContent = `${progress.platformCount()}/${PLATFORM_ORDER.length}`;
-}
+  const count = document.getElementById('hudCount');
+  const fill = document.getElementById('hudBarFill');
+  const badges = document.getElementById('hudBadges');
+  const n = progress.badgeCount();
 
-function flashPromotion() {
-  const el = document.getElementById('hudJob');
-  updateHud();
-  el.classList.remove('promoted');
-  void el.offsetWidth;   // restart the animation
-  el.classList.add('promoted');
+  if (count) count.textContent = `${n}/6`;
+  if (fill) fill.style.width = `${(n / NPC_ORDER.length) * 100}%`;
+  if (badges) {
+    badges.innerHTML = NPC_ORDER
+      .map(id => `<i class="${progress.hasBadge(id) ? 'on' : ''}" title="${NPC_CONTENT[id].badge}">★</i>`)
+      .join('');
+  }
 }
 
 let hintOn = false;
@@ -268,11 +193,14 @@ function frame(now) {
 
 // ---------------------------------------------------------------- input glue
 
+// Directions serve two masters: walking, and moving between quiz options.
 let lastDirLatch = null;
 
 function pumpMenuInput() {
   if (!dialogue.isChoosing()) { lastDirLatch = null; return; }
-  const dir = input.held.up ? 'up' : input.held.down ? 'down' : null;
+  const up = input.held.up;
+  const down = input.held.down;
+  const dir = up ? 'up' : down ? 'down' : null;
   if (dir && dir !== lastDirLatch) dialogue.moveChoice(dir === 'down' ? 1 : -1);
   lastDirLatch = dir;
 }
@@ -286,6 +214,20 @@ function onAction() {
 
 // ---------------------------------------------------------------- lifecycle
 
+function startPlaying() {
+  screens.hideTitle();
+  mode = 'play';
+  last = 0;
+  accumulator = 0;
+  rebuildCollision({ gateOpen: progress.run.gateOpen });
+  render.bakeMap();
+  updateHud();
+  nudge();
+}
+
+// A finished run: submit the score, offer a recommendation, and let them go
+// back to the page. Everything server-side is optional — an offline or
+// unconfigured build shows the same screen minus those blocks.
 function showResults() {
   const session = landing.getSession();
   const signedIn = db.isConfigured() && session && landing.getProfile();
@@ -296,8 +238,7 @@ function showResults() {
 
     save: signedIn ? async () => {
       const { error } = await db.submitScore(
-        session.user.id, progress.run.score,
-        progress.platformCount(), progress.fieldCount()
+        session.user.id, progress.run.score, progress.badgeCount()
       );
       if (error) return `Couldn't save: ${db.friendlyError(error)}`;
       landing.refreshPublic();
@@ -312,28 +253,13 @@ function showResults() {
   });
 }
 
-function refreshWorld() {
-  const { routeOpen, gateOpen, officeOpen } = progress.run;
-  rebuildCollision({ routeOpen, gateOpen, officeOpen });
-  render.bakeMap();
-}
-
-function startPlaying() {
-  screens.hideTitle();
-  mode = 'play';
-  last = 0;
-  accumulator = 0;
-  refreshWorld();
-  updateHud();
-  nudge();
-}
-
 function startNewRun() {
   progress.reset();
   resetPlayer();
-  refreshWorld();
+  rebuildCollision({ gateOpen: false });
+  render.bakeMap();
   updateHud();
-  screens.setObjective('Read the sign, then find the workshop.');
+  screens.setObjective('Find the professor outside the lab.');
   mode = 'play';
 }
 
@@ -382,13 +308,16 @@ export function start() {
   screens.init();
   bindChrome();
 
-  refreshWorld();
+  rebuildCollision({ gateOpen: progress.run.gateOpen });
+  render.bakeMap();
   updateHud();
 
+  // The landing page is the front door; the title screen sits behind it, shown
+  // once they've chosen to play (and signed in, if Supabase is configured).
   landing.init({
     onStartGame: () => {
       mode = 'title';
-      screens.showTitle(progress.fieldCount() + progress.platformCount() > 0);
+      screens.showTitle(progress.badgeCount() > 0);
     }
   });
   landing.showLanding();

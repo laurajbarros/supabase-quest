@@ -38,13 +38,6 @@ export const C = {
   brandDark:  '#249b6b',
   brandLight: '#7ee2b8',
 
-  // Route 1 — the field. Amber is the career half of the game: field badges,
-  // job titles, the workplaces Laura actually worked in. Keeping it distinct
-  // from brand green is what stops the two routes reading as one long quiz.
-  amber:      '#d9a441',
-  amberDark:  '#9a6f22',
-  amberLight: '#f0c777',
-
   // ink / accents
   ink:        '#182818',
   inkSoft:    '#2a3a2a',
@@ -100,7 +93,6 @@ export const MONO = {
   [C.metal]: GB[2], [C.metalDark]: GB[0], [C.metalLight]: GB[3],
 
   [C.brand]: GB[2], [C.brandDark]: GB[0], [C.brandLight]: GB[3],
-  [C.amber]: GB[2], [C.amberDark]: GB[0], [C.amberLight]: GB[3],
 
   [C.ink]: GB[0], [C.inkSoft]: GB[0], [C.paper]: GB[3],
   [C.gold]: GB[3], [C.goldDark]: GB[1],

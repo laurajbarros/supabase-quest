@@ -143,10 +143,10 @@ function confirm() {
   answeredCorrectly = !!picked.correct;
   answeredCorrectly ? sfx.correct() : sfx.wrong();
 
-  // The follow-up is supplied by the caller and branches on the answer: the two
-  // routes acknowledge a wrong answer very differently, because one asks about
-  // facts and the other asks about judgment.
-  beats = quiz.resolve(answeredCorrectly, quiz.options.find(o => o.correct).text);
+  // Say plainly whether it was right, then teach the point either way — the
+  // goal is that they leave knowing the answer, not that they're scored.
+  const verdict = answeredCorrectly ? '✅ Correct.' : `❌ Not quite. The answer: ${quiz.options.find(o => o.correct).text}.`;
+  beats = [verdict, quiz.after].filter(Boolean);
   index = 0;
   shown = 0;
   timer = 0;

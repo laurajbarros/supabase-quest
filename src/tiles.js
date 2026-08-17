@@ -111,74 +111,10 @@ const DEFS = {
     p.speckle(6, [C.sandDark], 9);
     p.vline(0, 0, TS, C.goldDark).vline(15, 0, TS, C.goldDark);
   },
-  // The boundary between Route 1 and Route 2: amber, so the two halves of the
-  // game are told apart at a glance.
-  routeGate(p) {
-    p.rect(0, 0, TS, TS, C.amberDark);
-    p.rect(0, 3, TS, 10, C.amber);
-    for (let x = 0; x < TS; x += 4) p.vline(x, 3, 10, C.amberDark);
-    p.hline(0, 3, TS, C.amberLight).hline(0, 12, TS, C.amberDark);
-  },
-  // A door that stays shut until enough badges are earned.
-  doorLocked(p) {
-    p.rect(0, 0, TS, TS, C.wall);
-    p.rect(4, 3, 8, 13, C.trunk).rect(5, 4, 6, 5, '#6b3f1c');
-    p.rect(6, 9, 4, 4, C.metalDark);   // padlock plate
-    p.set(7, 10, C.gold).set(8, 10, C.gold);
-  },
   pedestal(p) {
     p.rect(0, 0, TS, TS, C.grass);
     p.rect(3, 9, 10, 6, C.metal).rect(4, 8, 8, 2, C.metalLight);
     p.rect(2, 14, 12, 2, C.metalDark);
-  },
-  // ---- Route 1: workplaces ------------------------------------------------
-  floor(p) {
-    p.rect(0, 0, TS, TS, '#e0d8c8');
-    p.hline(0, 0, TS, '#c8c0b0').vline(0, 0, TS, '#c8c0b0');
-  },
-  crate(p) {
-    p.rect(0, 0, TS, TS, C.grass);
-    p.rect(1, 3, 14, 12, C.trunkLight);
-    p.rect(2, 4, 12, 10, '#c9a06a');
-    p.hline(2, 8, 12, C.trunk);
-    p.vline(8, 4, 10, C.trunk);
-    p.hline(1, 3, 14, C.trunk).hline(1, 14, 14, C.trunk);
-  },
-  desk(p) {
-    p.rect(0, 0, TS, TS, '#e0d8c8');
-    p.rect(1, 4, 14, 8, C.trunkLight);
-    p.rect(1, 4, 14, 2, '#c9a06a');
-    p.rect(3, 6, 6, 4, C.paper);      // papers
-    p.rect(10, 6, 4, 4, C.night);     // a screen
-    p.rect(11, 7, 2, 2, C.brand);
-    p.rect(2, 12, 2, 4, C.trunk).rect(12, 12, 2, 4, C.trunk);
-  },
-  // The machines in the Snowflake Factory: each one built for one client.
-  machine(p) {
-    p.rect(0, 0, TS, TS, '#e0d8c8');
-    p.rect(2, 3, 12, 11, C.metal);
-    p.rect(3, 4, 10, 4, C.metalDark);
-    p.set(5, 6, C.danger).set(8, 6, C.gold).set(11, 6, C.brand);
-    p.rect(4, 10, 8, 2, C.metalLight);
-    p.rect(1, 14, 14, 2, C.metalDark);
-  },
-  shelf(p) {
-    p.rect(0, 0, TS, TS, C.trunk);
-    p.rect(1, 1, 14, 14, '#8a5a2a');
-    for (let y = 2; y < 15; y += 4) {
-      p.hline(1, y + 2, 14, C.trunk);
-      for (let x = 2; x < 14; x += 2) {
-        p.rect(x, y, 1, 2, [C.danger, C.water, C.gold, C.brand][(x + y) % 4]);
-      }
-    }
-  },
-  // Signposts at the Backend Crossroads.
-  signpost(p) {
-    p.rect(0, 0, TS, TS, C.grass);
-    p.rect(7, 6, 2, 9, C.trunk);
-    p.rect(1, 2, 13, 4, '#e8d8a8').hline(1, 2, 13, '#b09858');
-    p.hline(3, 4, 8, '#685838');
-    p.rect(1, 7, 9, 3, '#e8d8a8').hline(1, 7, 9, '#b09858');
   },
   server(p) {
     p.rect(0, 0, TS, TS, C.night);
@@ -208,8 +144,7 @@ function roof(p, color, top) {
 export const SOLID = new Set([
   'water', 'tree', 'bush', 'sign', 'fence', 'fenceWork', 'server', 'pedestal',
   'roofTop', 'roofBottom', 'roofTopAlt', 'roofBottomAlt', 'roofTopDark', 'roofBottomDark',
-  'wall', 'window', 'door', 'doorLab', 'doorLocked',
-  'routeGate', 'crate', 'desk', 'machine', 'shelf', 'signpost'
+  'wall', 'window', 'door', 'doorLab'
 ]);
 
 // Minimap categories. Sampling average sprite colour doesn't work — every tile
@@ -217,10 +152,10 @@ export const SOLID = new Set([
 // grass. Listing the exceptions is both simpler and correct.
 const KIND = {
   grass: 'ground', grassAlt: 'ground', flowers: 'ground',
-  path: 'road', plaza: 'road', gateOpen: 'road', floor: 'floor',
+  path: 'road', plaza: 'road', gateOpen: 'road',
   water: 'water',
   tree: 'veg', bush: 'veg',
-  door: 'door', doorLab: 'door', doorLocked: 'wall'
+  door: 'door', doorLab: 'door'
 };
 
 export function kindOf(name) {
