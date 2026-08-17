@@ -169,6 +169,7 @@ html, body {
   pointer-events: none;
 }
 
+#objectiveText:empty { display: none; }
 #objectiveText {
   display: inline-block;
   max-width: 100%;
@@ -362,6 +363,29 @@ body.touch #touch { display: block; }
    isolation and looked like a bug next to the rest of the dialogue. */
 #dialogue.sign #dlgText { letter-spacing: 1px; }
 #dialogue.sign #dlgName { background: #7a4a20; color: #f8e8c0; }
+
+/* Laura speaks in her own voice, not as one of the cast: dark box, brand-green
+   name tag, so the frame around the game is visibly not part of it. */
+#dialogue.laura {
+  background: #16201a;
+  color: #e6efd8;
+  border-color: #0a1208;
+  box-shadow: inset 0 0 0 2px #16201a, inset 0 0 0 4px #2a3a2a,
+              0 6px 18px rgba(0, 0, 0, .5);
+}
+#dialogue.laura #dlgName { background: #0a1208; color: var(--brand); }
+
+/* A card is a stamp, not speech — a job title, a metric, a stage of a system
+   being built. Centred, spaced, and it lands all at once. */
+#dialogue.card #dlgText {
+  text-align: center;
+  font-size: clamp(17px, 5.5vw, 26px);
+  font-weight: bold;
+  letter-spacing: 3px;
+  color: var(--gold);
+  padding: 6px 0;
+}
+#dialogue.card { border-color: var(--gold-dark); }
 
 #dlgNext {
   position: absolute;

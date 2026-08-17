@@ -438,6 +438,31 @@ export const NUDGES = {
   ceiling:    'The site at the eastern edge is open. A CTO is waiting.'
 };
 
+// The opening. Plays once, on a fresh run, with Laura standing still on the
+// map — the world is visible behind her, so it reads as her talking to you
+// rather than as a splash screen.
+//
+// Cut from ~28 beats to 11. Everything the original established survives: who
+// she is, the joke that admits what this is, that it's about her rather than
+// about Supabase, what the player actually does, and where it's going. What
+// went was repetition — three beats saying "you'll meet people who know the
+// story" when one does it. On a phone, every beat is a tap, and the opening
+// is where a stranger decides whether to keep going.
+export const INTRO_BEATS = [
+  "Hi. I'm Laura.",
+  'And yes, I built a game to apply for a job.',
+  { pause: 700 },
+  "This isn't really a game about Supabase.",
+  "It's a game about how I got here.",
+  { pause: 500 },
+  "You'll walk a few chapters of my career.",
+  'Some of them happened. Some are about to.',
+  'Talk to people. Make the call they had to make.',
+  'There are no Pokéballs.',
+  'There are, however, badges.',
+  'Let me see if I can make it to Supabase.'
+];
+
 export const SPAWN_SIGN_BEATS = [
   'This is where I worked.',
   'Six years of it.',

@@ -10,7 +10,8 @@ import { sfx } from './audio.js';
 const CHAR_MS = 25;
 
 let el = {};
-let state = 'idle';   // idle | typing | ready | choosing | done
+// idle | typing | ready | choosing | paused | card
+let state = 'idle';
 let beats = [];
 let index = 0;
 let shown = 0;
@@ -18,7 +19,9 @@ let timer = 0;
 let quiz = null;
 let choice = 0;
 let onFinish = null;
+let onWorld = null;
 let answeredCorrectly = false;
+let pauseLeft = 0;
 
 export function init() {
   el = {
@@ -38,7 +41,16 @@ export function init() {
 export function isOpen() { return state !== 'idle'; }
 export function isChoosing() { return state === 'choosing'; }
 
-export function open(newBeats, { name = '', speaker = 'npc', quiz: q = null, onDone = null } = {}) {
+// A beat is a string, or one of:
+//   { pause: ms }        hold on an empty box, then continue
+//   { card: 'TEXT' }     a full-width title card, waits for A
+//   { set: [[x,y,tile]]} change the world mid-scene, shows nothing
+//
+// The last one is what lets a scene show rather than tell: a pile of crates can
+// disappear one at a time between lines of dialogue. `onWorld` receives it, so
+// this module never has to know about the map.
+export function open(newBeats, { name = '', speaker = 'npc', quiz: q = null,
+                                 onDone = null, world = null } = {}) {
   beats = [...newBeats];
   index = 0;
   shown = 0;
@@ -46,7 +58,9 @@ export function open(newBeats, { name = '', speaker = 'npc', quiz: q = null, onD
   quiz = q;
   choice = 0;
   onFinish = onDone;
+  onWorld = world;
   answeredCorrectly = false;
+  pauseLeft = 0;
 
   el.box.className = 'visible ' + speaker;
   el.name.textContent = name;
@@ -54,21 +68,76 @@ export function open(newBeats, { name = '', speaker = 'npc', quiz: q = null, onD
   el.choices.innerHTML = '';
   document.body.classList.add('dialog');
 
-  state = 'typing';
-  paint();
+  enterBeat();
 }
 
+const beatOf = () => beats[index];
+const isText = b => typeof b === 'string';
+
 function currentText() {
-  return beats[index] || '';
+  const b = beatOf();
+  if (isText(b)) return b;
+  if (b && b.card) return b.card;
+  return '';
+}
+
+// Walks forward over any beats that aren't displayed, so a run of world
+// changes resolves in one go rather than costing the player a tap each.
+function enterBeat() {
+  for (;;) {
+    const b = beatOf();
+
+    if (b === undefined) {
+      if (quiz) askQuiz();
+      else close();
+      return;
+    }
+    if (isText(b)) {
+      shown = 0;
+      timer = 0;
+      state = 'typing';
+      paint();
+      return;
+    }
+    if (b.set) {
+      if (onWorld) onWorld(b.set);
+      index++;
+      continue;
+    }
+    if (b.pause) {
+      pauseLeft = b.pause;
+      state = 'paused';
+      shown = 0;
+      paint();
+      return;
+    }
+    if (b.card) {
+      shown = b.card.length;   // a card lands at once; it's a stamp, not speech
+      state = 'card';
+      sfx.badge();
+      paint();
+      return;
+    }
+    index++;   // unknown beat shape: skip rather than stall the scene
+  }
 }
 
 function paint() {
-  el.text.textContent = currentText().slice(0, shown);
-  el.box.classList.toggle('ready', state === 'ready');
+  const b = beatOf();
+  const card = !!(b && b.card);
+  el.text.textContent = state === 'paused' ? '' : currentText().slice(0, shown);
+  el.box.classList.toggle('ready', state === 'ready' || state === 'card');
   el.box.classList.toggle('choosing', state === 'choosing');
+  el.box.classList.toggle('card', card);
+  el.name.style.display = (card || !el.name.textContent) ? 'none' : '';
 }
 
 export function update(dt) {
+  if (state === 'paused') {
+    pauseLeft -= dt;
+    if (pauseLeft <= 0) { index++; enterBeat(); }
+    return;
+  }
   if (state !== 'typing') return;
 
   timer += dt;
@@ -94,22 +163,16 @@ export function action() {
     paint();
     return;
   }
-  if (state === 'ready') { advance(); return; }
+  // A during a pause skips the wait rather than doing nothing.
+  if (state === 'paused') { index++; enterBeat(); return; }
+  if (state === 'ready' || state === 'card') { advance(); return; }
   if (state === 'choosing') { confirm(); }
 }
 
 function advance() {
   index++;
-  if (index < beats.length) {
-    shown = 0;
-    timer = 0;
-    state = 'typing';
-    sfx.advance();
-    paint();
-    return;
-  }
-  if (quiz) { askQuiz(); return; }
-  close();
+  if (index < beats.length) sfx.advance();
+  enterBeat();
 }
 
 function askQuiz() {
@@ -160,6 +223,7 @@ function confirm() {
 export function close() {
   state = 'idle';
   el.box.className = '';
+  el.name.style.display = '';
   document.body.classList.remove('dialog');
   const done = onFinish;
   onFinish = null;

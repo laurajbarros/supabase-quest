@@ -11,11 +11,11 @@ import * as progress from './progress.js';
 import { setMonochrome, isMonochrome, TS } from './painter.js';
 import { player, update as updatePlayer, facingTile, resetPlayer } from './player.js';
 import {
-  NPCS, END_SIGN, SPAWN_SIGN, GATE, ROUTE_GATE, OFFICE_DOOR, npcAt, rebuildCollision
+  NPCS, END_SIGN, SPAWN_SIGN, GATE, ROUTE_GATE, OFFICE_DOOR, npcAt, rebuildCollision, grid
 } from './map.js';
 import {
   NPC_CONTENT, FIELD_ORDER, PLATFORM_ORDER, NUDGES, TITLES,
-  END_SIGN_BEATS, SPAWN_SIGN_BEATS, BRIDGE_BEATS,
+  END_SIGN_BEATS, SPAWN_SIGN_BEATS, BRIDGE_BEATS, INTRO_BEATS,
   GATE_LOCKED_BEATS, ROUTE_LOCKED_BEATS, OFFICE_LOCKED_BEATS
 } from './content.js';
 import { sfx, isMuted, setMuted } from './audio.js';
@@ -120,7 +120,19 @@ function interact() {
 
 function openTalk(beats, opts = {}) {
   mode = 'dialog';
-  dialogue.open(beats, opts);
+  // Scenes can rewrite the world between lines — a pile of crates disappearing
+  // as the tooling that removed it is described.
+  dialogue.open(beats, {
+    world: changes => {
+      for (const [x, y, tile] of changes) {
+        if (grid[y] && grid[y][x] !== undefined) grid[y][x] = tile;
+      }
+      const { routeOpen, gateOpen, officeOpen } = progress.run;
+      rebuildCollision({ routeOpen, gateOpen, officeOpen });
+      render.bakeMap();
+    },
+    ...opts
+  });
 }
 
 function finishNpc(npc, { correct }) {
@@ -325,11 +337,25 @@ function startPlaying() {
   accumulator = 0;
   refreshWorld();
   updateHud();
+
+  // The opening plays once. It's the introduction to a person, not a tutorial
+  // to sit through on every visit, and progress already survives a reload.
+  //
+  // The objective chip waits until she's finished: pointing at the first stop
+  // while she's still explaining what the game is answers a question the
+  // player hasn't been given yet.
+  if (!progress.hasSeen('intro')) {
+    progress.markSeen('intro');
+    screens.setObjective('');
+    openTalk(INTRO_BEATS, { name: 'LAURA', speaker: 'laura', onDone: nudge });
+    return;
+  }
   nudge();
 }
 
 function startNewRun() {
   progress.reset();
+  progress.markSeen('intro');   // replaying doesn't mean sitting through it again
   resetPlayer();
   refreshWorld();
   updateHud();
