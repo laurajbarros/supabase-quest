@@ -63,11 +63,22 @@ export function isTouchDevice() {
   return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 }
 
+// WASD means the letters a, w, s and d are movement keys, and the handler is
+// bound to the window. Without this guard, typing an email address into the
+// sign-in form silently loses every "a" to the game, because preventDefault()
+// stops the character ever reaching the field. Space and Enter would break
+// form submission the same way.
+function isTyping(target) {
+  if (!target) return false;
+  const tag = target.tagName;
+  return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target.isContentEditable;
+}
+
 export function init(newHandlers = {}) {
   handlers = { ...handlers, ...newHandlers };
 
   window.addEventListener('keydown', e => {
-    if (e.repeat) return;
+    if (e.repeat || isTyping(e.target)) return;
     if (KEYS[e.code]) {
       press(KEYS[e.code]);
       e.preventDefault();
@@ -78,6 +89,7 @@ export function init(newHandlers = {}) {
   });
 
   window.addEventListener('keyup', e => {
+    if (isTyping(e.target)) return;
     if (KEYS[e.code]) {
       release(KEYS[e.code]);
       e.preventDefault();
