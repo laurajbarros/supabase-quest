@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0d1410">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Supabase Quest</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="stage">
+  <canvas id="game"></canvas>
+
+  <!-- HUD. Lives in the DOM, not the canvas, so type scales independently of
+       the pixel art — the thing that keeps text readable on a phone. -->
+  <header id="hud">
+    <div id="hudLeft">
+      <span id="hudTitle">CERTIFICATION</span>
+      <div id="hudBar"><div id="hudBarFill"></div></div>
+      <span id="hudCount">0/6</span>
+      <span id="hudBadges"></span>
+    </div>
+    <div id="hudRight">
+      <button id="btnMute" aria-label="Sound" aria-pressed="false">🔇</button>
+      <button id="btnPalette" aria-label="Toggle Game Boy palette" aria-pressed="false">◐</button>
+      <button id="btnMenu" aria-label="Quest log">☰</button>
+    </div>
+  </header>
+
+  <div id="objective"><span id="objectiveText">Find the professor outside the lab.</span></div>
+
+  <div id="toast"></div>
+
+  <!-- Dialogue. Bottom third only; the map stays visible above it. -->
+  <div id="dialogue">
+    <div id="dlgName"></div>
+    <p id="dlgText"></p>
+    <div id="dlgChoices"></div>
+    <div id="dlgNext">▼</div>
+  </div>
+
+  <!-- Touch controls; revealed by body.touch from input.js -->
+  <div id="touch">
+    <div id="pad" aria-label="D-pad">
+      <span class="cap up" data-pad="up"></span>
+      <span class="cap down" data-pad="down"></span>
+      <span class="cap left" data-pad="left"></span>
+      <span class="cap right" data-pad="right"></span>
+      <span class="cap mid"></span>
+    </div>
+    <div id="actions">
+      <button id="btnA" data-btn="a" aria-label="Interact">A</button>
+    </div>
+  </div>
+
+  <!-- Title -->
+  <div id="titleScreen">
+    <div class="plate">
+      <h1>SUPABASE<span>QUEST</span></h1>
+      <p class="tag">Six stops. One database. Zero lock-in.</p>
+      <p id="titleHint">PRESS START</p>
+      <p class="ver">v0.2 · built with Claude Code</p>
+    </div>
+  </div>
+
+  <!-- Quest log -->
+  <div id="panel"><div id="panelInner"></div></div>
+
+  <!-- Results -->
+  <div id="results"><div id="resultsInner"></div></div>
+
+  <!-- ============================================================
+       Public pages: landing, sign-in, nickname.
+       ============================================================ -->
+  <div id="landing" class="page">
+    <div class="page-inner">
+      <header class="hero">
+        <h1>SUPABASE<span>QUEST</span></h1>
+        <p class="lede">I want to work at Supabase. I built this to show you why.</p>
+        <button id="btnPlay" class="cta">PLAY</button>
+        <div id="account"></div>
+      </header>
+
+      <section id="videoSlot" class="video"></section>
+
+      <section>
+        <h2>Leaderboard</h2>
+        <ol id="leaderboard" class="board"></ol>
+      </section>
+
+      <section id="recSection" style="display:none">
+        <h2>What people said</h2>
+        <div id="recWall" class="recs"></div>
+      </section>
+
+      <footer class="site-footer">
+        <p>Auth and leaderboard powered by Supabase. Built with Claude Code.</p>
+      </footer>
+    </div>
+  </div>
+
+  <div id="login" class="page">
+    <div class="page-inner narrow">
+      <h2>Sign in to play</h2>
+      <p class="muted">Scores go on a public leaderboard, so you need a name.</p>
+
+      <!-- Magic link first and largest: not every visitor has GitHub. -->
+      <div class="method primary">
+        <label for="magicEmail">Email me a magic link</label>
+        <input id="magicEmail" type="email" inputmode="email" autocomplete="email"
+               placeholder="you@example.com">
+        <button id="btnMagic" type="button" class="cta">Send magic link</button>
+      </div>
+
+      <div id="oauthDivider" class="divider"><span>or</span></div>
+
+      <div id="oauthRow" class="oauth">
+        <button type="button" data-provider="google">Continue with Google</button>
+        <button type="button" data-provider="github">Continue with GitHub</button>
+      </div>
+
+      <button id="pwToggle" type="button" class="linkish" aria-expanded="false">
+        Use email and password instead
+      </button>
+
+      <form id="pwForm" class="pw">
+        <input id="pwEmail" type="email" inputmode="email" autocomplete="email" placeholder="Email">
+        <input id="pwPass" type="password" autocomplete="current-password" placeholder="Password">
+        <div class="pw-actions">
+          <button type="submit" data-mode="signin">Sign in</button>
+          <button type="submit" data-mode="signup" class="ghost">Create account</button>
+        </div>
+      </form>
+
+      <p id="loginError" role="status" aria-live="polite"></p>
+      <button id="loginBack" type="button" class="linkish">← Back</button>
+    </div>
+  </div>
+
+  <div id="nickname" class="page">
+    <div class="page-inner narrow">
+      <h2>What should we call you on the leaderboard?</h2>
+      <input id="nickInput" type="text" maxlength="30" autocomplete="nickname" placeholder="Your name">
+      <p class="muted">Thirty characters, visible to everyone.</p>
+      <button id="btnNick" type="button" class="cta">Continue</button>
+      <p id="nickError" role="status" aria-live="polite"></p>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="src/game.js"></script>
+</body>
+</html>

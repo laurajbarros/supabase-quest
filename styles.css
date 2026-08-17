@@ -1,0 +1,786 @@
+/* ============================================================
+ * Interface — mobile first.
+ *
+ * The world is canvas; everything readable is DOM on top of it. The pixel art
+ * stays hard-edged, but the chrome (HUD, chips, buttons) gets rounded corners
+ * and soft shadows: it's an overlay, not part of the 1989 fiction, and legible
+ * chrome beats period-accurate chrome on a phone.
+ * ============================================================ */
+
+:root {
+  --brand:      #3ecf8e;
+  --brand-dark: #249b6b;
+  --gold:       #f8d030;
+  --gold-dark:  #b88c08;
+  --paper:      #f8f8e8;
+  --ink:        #182818;
+  --frame:      #0d1410;
+  --green-mid:  #306230;
+  --green-lit:  #9bbc0f;
+
+  --sa-t: env(safe-area-inset-top, 0px);
+  --sa-b: env(safe-area-inset-bottom, 0px);
+  --sa-l: env(safe-area-inset-left, 0px);
+  --sa-r: env(safe-area-inset-right, 0px);
+
+  --font: "Courier New", ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--frame);
+  color: var(--paper);
+  font-family: var(--font);
+  /* Kills pull-to-refresh and rubber-band scroll. */
+  overscroll-behavior: none;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#stage { position: fixed; inset: 0; overflow: hidden; background: var(--frame); }
+
+#game {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  touch-action: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+/* ---------- HUD ---------- */
+#hud {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: calc(6px + var(--sa-t)) calc(8px + var(--sa-r)) 6px calc(8px + var(--sa-l));
+  pointer-events: none;
+}
+
+#hudLeft {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 5px 12px;
+  background: rgba(10, 18, 10, .78);
+  border: 2px solid var(--green-mid);
+  border-radius: 999px;
+  backdrop-filter: blur(3px);
+}
+
+#hudTitle {
+  font-size: clamp(10px, 3vw, 13px);
+  font-weight: bold;
+  letter-spacing: 1px;
+  color: var(--brand);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 38vw;
+}
+
+#hudBar {
+  flex: none;
+  width: clamp(44px, 14vw, 90px);
+  height: 8px;
+  border: 2px solid var(--green-mid);
+  border-radius: 999px;
+  background: #0a120a;
+  overflow: hidden;
+}
+
+#hudBarFill {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--brand-dark), var(--brand));
+  transition: width .45s cubic-bezier(.2, .9, .3, 1);
+}
+
+#hudCount { font-size: clamp(9px, 2.6vw, 12px); color: var(--green-lit); white-space: nowrap; }
+
+#hudRight { display: flex; gap: 8px; pointer-events: auto; }
+
+#hudRight button {
+  width: 42px;
+  height: 42px;
+  font-family: var(--font);
+  font-size: 19px;
+  line-height: 1;
+  color: var(--paper);
+  background: rgba(10, 18, 10, .8);
+  border: 2px solid var(--green-mid);
+  border-radius: 12px;
+  backdrop-filter: blur(3px);
+  cursor: pointer;
+}
+#hudRight button:active { background: var(--green-mid); transform: scale(.94); }
+#btnPalette[aria-pressed="true"] { color: var(--gold); border-color: var(--gold-dark); }
+
+/* ---------- objective chip ---------- */
+#objective {
+  position: absolute;
+  top: calc(54px + var(--sa-t));
+  left: calc(8px + var(--sa-l));
+  right: calc(8px + var(--sa-r));
+  z-index: 5;
+  display: flex;
+  pointer-events: none;
+}
+
+#objectiveText {
+  display: inline-block;
+  max-width: 100%;
+  padding: 5px 10px;
+  font-size: clamp(10px, 2.9vw, 13px);
+  line-height: 1.3;
+  background: rgba(10, 18, 10, .8);
+  border: 2px solid var(--brand-dark);
+  border-left-width: 5px;
+  border-radius: 4px;
+  backdrop-filter: blur(3px);
+}
+
+/* ---------- touch controls ---------- */
+#touch {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: min(230px, 34vh);
+  z-index: 6;
+  display: none;              /* switched on by body.touch */
+  pointer-events: none;
+}
+body.touch #touch { display: block; }
+
+#pad {
+  position: absolute;
+  left: calc(14px + var(--sa-l));
+  bottom: calc(16px + var(--sa-b));
+  width: min(150px, 38vw);
+  height: min(150px, 38vw);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+#pad .cap {
+  position: absolute;
+  width: 33.4%;
+  height: 33.4%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* High contrast: the pad has to read over grass, sand and asphalt alike. */
+  background: rgba(14, 22, 14, .92);
+  border: 3px solid var(--green-lit);
+  border-radius: 8px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .55);
+  color: var(--green-lit);
+  font-size: clamp(13px, 4.4vw, 20px);
+  line-height: 1;
+  transition: background .08s, color .08s;
+}
+
+#pad .cap.up::before    { content: "▲"; }
+#pad .cap.down::before  { content: "▼"; }
+#pad .cap.left::before  { content: "◀"; }
+#pad .cap.right::before { content: "▶"; }
+
+#pad .cap.up    { left: 33.3%; top: 0; }
+#pad .cap.down  { left: 33.3%; bottom: 0; }
+#pad .cap.left  { left: 0; top: 33.3%; }
+#pad .cap.right { right: 0; top: 33.3%; }
+#pad .cap.mid   { left: 33.3%; top: 33.3%; border-radius: 3px; border-color: var(--green-mid); }
+#pad .cap.on    { background: var(--brand); border-color: var(--paper); color: var(--ink); }
+
+#actions {
+  position: absolute;
+  right: calc(16px + var(--sa-r));
+  bottom: calc(22px + var(--sa-b));
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+#actions button {
+  width: min(74px, 19vw);
+  height: min(74px, 19vw);
+  font-family: var(--font);
+  font-size: clamp(16px, 5vw, 22px);
+  font-weight: bold;
+  color: var(--ink);
+  background: var(--brand);
+  border: 3px solid var(--frame);
+  border-radius: 50%;
+  box-shadow: 0 4px 0 var(--brand-dark);
+  touch-action: none;
+  cursor: pointer;
+}
+#actions button:active,
+#actions button.on { transform: translateY(4px); box-shadow: none; }
+
+/* The A button lights up exactly when something is in front of the player —
+   the link between the ▾ marker on the map and the thumb on the button. */
+#btnA.hint { border-color: var(--paper); animation: hint .9s ease-in-out infinite; }
+@keyframes hint {
+  0%, 100% { box-shadow: 0 4px 0 var(--brand-dark), 0 0 0 0 rgba(62, 207, 142, .55); }
+  50%      { box-shadow: 0 4px 0 var(--brand-dark), 0 0 0 10px rgba(62, 207, 142, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #btnA.hint { animation: none; box-shadow: 0 4px 0 var(--brand-dark), 0 0 0 4px rgba(62, 207, 142, .5); }
+}
+
+/* ---------- badge row ---------- */
+/* Six stars, a bar, a counter and three buttons don't fit across a 412px phone.
+   The word "CERTIFICATION" is the one piece that's pure decoration — the quest
+   log says it in full — so it's what goes. */
+@media (max-width: 480px) { #hudTitle { display: none; } }
+
+#hudBadges { display: flex; gap: 2px; font-size: 11px; line-height: 1; }
+#hudBadges i { color: #2c3a2c; font-style: normal; }
+#hudBadges i.on { color: var(--gold); }
+
+/* ---------- toast ---------- */
+#toast {
+  position: absolute;
+  left: 50%;
+  top: calc(100px + var(--sa-t));
+  transform: translate(-50%, -8px);
+  z-index: 9;
+  max-width: 84vw;
+  padding: 9px 16px;
+  text-align: center;
+  font-size: clamp(11px, 3vw, 14px);
+  background: rgba(10, 18, 10, .94);
+  border: 2px solid var(--brand);
+  border-radius: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s, transform .25s;
+}
+#toast.visible { opacity: 1; transform: translate(-50%, 0); }
+
+/* ============================================================
+ * Dialogue — bottom third, map visible above.
+ * ============================================================ */
+#dialogue {
+  position: absolute;
+  left: calc(8px + var(--sa-l));
+  right: calc(8px + var(--sa-r));
+  bottom: calc(8px + var(--sa-b));
+  z-index: 8;
+  display: none;
+  padding: 14px 14px 12px;
+  background: var(--paper);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  /* Double inner rule — the classic boxed-text look, done with insets rather
+     than nested elements. */
+  box-shadow: inset 0 0 0 2px var(--paper), inset 0 0 0 4px #c8c8a8,
+              0 6px 18px rgba(0, 0, 0, .5);
+  cursor: pointer;
+  transform: translateY(14px);
+  opacity: 0;
+  transition: transform .16s ease-out, opacity .16s ease-out;
+}
+#dialogue.visible { display: block; transform: translateY(0); opacity: 1; }
+
+#dlgName {
+  position: absolute;
+  top: -13px;
+  left: 14px;
+  max-width: calc(100% - 40px);
+  padding: 3px 10px;
+  font-size: clamp(9px, 2.6vw, 11px);
+  font-weight: bold;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  background: var(--ink);
+  color: var(--brand);
+  border-radius: 999px;
+}
+
+#dlgText {
+  margin: 4px 0 0;
+  font-size: clamp(13px, 3.8vw, 17px);
+  line-height: 1.45;
+  letter-spacing: .2px;
+  /* Stable height so the box doesn't jump between a one-line and two-line
+     beat — the single most distracting thing a dialogue box can do. */
+  min-height: 2.9em;
+}
+
+/* A sign is not a person: centred, small-caps, wooden trim. */
+#dialogue.sign {
+  background: #e8e4cf;
+  border-color: #4a4636;
+  box-shadow: inset 0 0 0 3px #e8e4cf, inset 0 0 0 6px #b8a860,
+              0 6px 18px rgba(0, 0, 0, .5);
+}
+#dialogue.sign #dlgText { text-align: center; font-variant: small-caps; letter-spacing: 1px; }
+#dialogue.sign #dlgName { background: #7a4a20; color: #f8e8c0; }
+
+#dlgNext {
+  position: absolute;
+  right: 12px;
+  bottom: 6px;
+  font-size: 13px;
+  color: var(--green-mid);
+  opacity: 0;
+  animation: bob .9s infinite;
+}
+#dialogue.ready #dlgNext { opacity: 1; }
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(3px); }
+}
+
+#dlgChoices { display: none; flex-direction: column; gap: 7px; margin-top: 10px; }
+#dialogue.choosing #dlgChoices { display: flex; }
+#dialogue.choosing #dlgNext { display: none; }
+#dlgChoices button {
+  width: 100%;
+  padding: 10px 10px;
+  text-align: left;
+  font-family: var(--font);
+  font-size: clamp(11px, 3.2vw, 14px);
+  font-weight: bold;
+  color: var(--ink);
+  background: #e4e4d0;
+  border: 3px solid var(--ink);
+  border-radius: 8px;
+  cursor: pointer;
+}
+#dlgChoices button.sel { background: var(--gold); box-shadow: inset 0 0 0 2px var(--paper); }
+
+/* The dialogue box owns the bottom of the screen, and would sit on top of the A
+   button anyway. Tapping the box advances, and quiz options are tapped
+   directly, so the pad has nothing to do here. */
+body.dialog #touch { display: none; }
+
+/* ============================================================
+ * Full-screen overlays
+ * ============================================================ */
+#titleScreen, #panel, #results {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding: calc(16px + var(--sa-t)) calc(16px + var(--sa-r))
+           calc(24px + var(--sa-b)) calc(16px + var(--sa-l));
+  background: #070d07;
+}
+#titleScreen.visible, #panel.visible, #results.visible { display: flex; }
+#titleScreen { align-items: center; justify-content: center; text-align: center; }
+#panel, #results { display: none; }
+#panel.visible, #results.visible { display: block; }
+#panelInner, #resultsInner { max-width: 640px; margin: 0 auto; }
+/* Both panels are short next to a phone's height; centring stops them looking
+   like a page that failed to finish loading. */
+#panel.visible #panelInner, #results.visible #resultsInner {
+  min-height: calc(100vh - 60px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+body.title #hud, body.title #objective, body.title #touch,
+body.panel #hud, body.panel #objective, body.panel #touch,
+body.results #hud, body.results #objective, body.results #touch { display: none; }
+
+/* ---------- title ---------- */
+#titleScreen .plate { max-width: 420px; }
+#titleScreen h1 {
+  margin: 0;
+  font-size: clamp(28px, 11vw, 54px);
+  line-height: .95;
+  letter-spacing: 2px;
+  color: var(--brand);
+  text-shadow: 4px 4px 0 #0a1a12;
+}
+#titleScreen h1 span { display: block; color: var(--paper); }
+#titleScreen .tag {
+  margin: 16px 0 0;
+  font-size: clamp(11px, 3.2vw, 14px);
+  color: var(--green-lit);
+}
+#titleHint {
+  margin: 34px 0 0;
+  font-size: clamp(12px, 3.6vw, 16px);
+  font-weight: bold;
+  letter-spacing: 2px;
+  color: var(--gold);
+  animation: flash 1.1s steps(1) infinite;
+}
+@keyframes flash { 0%, 60% { opacity: 1; } 61%, 100% { opacity: .15; } }
+#titleScreen .ver { margin: 26px 0 0; font-size: 10px; color: #4d6a4d; }
+@media (prefers-reduced-motion: reduce) { #titleHint { animation: none; } }
+
+/* ---------- quest log & results ---------- */
+#panel h2, #results h2 {
+  margin: 0 0 4px;
+  font-size: clamp(16px, 5vw, 22px);
+  letter-spacing: 1px;
+  color: var(--brand);
+}
+#panel .sub { margin: 0 0 16px; font-size: clamp(10px, 3vw, 12px); color: var(--green-lit); }
+
+.quests { list-style: none; margin: 0; padding: 0; }
+.quests li {
+  display: flex;
+  align-items: baseline;
+  gap: 9px;
+  padding: 9px 10px;
+  margin-bottom: 7px;
+  background: rgba(255, 255, 255, .04);
+  border-left: 4px solid #2c3a2c;
+  border-radius: 5px;
+  font-size: clamp(11px, 3.2vw, 14px);
+}
+.quests li.got { border-left-color: var(--gold); }
+.quests li.locked { opacity: .55; }
+.quests .mark { color: var(--gold); }
+.quests .who { flex: 1; }
+.quests .note { font-size: .82em; color: var(--green-lit); }
+
+#results .score {
+  margin: 10px 0;
+  font-size: clamp(36px, 14vw, 64px);
+  font-weight: bold;
+  color: var(--gold);
+  line-height: 1;
+}
+#results .score span { font-size: .25em; color: var(--green-lit); letter-spacing: 2px; }
+#results .badges { list-style: none; margin: 12px 0; padding: 0; }
+#results .badges li { padding: 6px 0; font-size: clamp(12px, 3.4vw, 15px); color: var(--paper); }
+#results .note { font-size: clamp(11px, 3vw, 13px); color: var(--green-lit); }
+#results .soon { margin-top: 8px; font-size: 11px; color: #4d6a4d; }
+
+#panel .close, #results .again {
+  margin-top: 18px;
+  padding: 12px 20px;
+  font-family: var(--font);
+  font-size: clamp(12px, 3.4vw, 15px);
+  font-weight: bold;
+  color: var(--ink);
+  background: var(--brand);
+  border: 3px solid var(--frame);
+  border-radius: 10px;
+  box-shadow: 0 4px 0 var(--brand-dark);
+  cursor: pointer;
+}
+#panel .close:active, #results .again:active { transform: translateY(4px); box-shadow: none; }
+
+/* ============================================================
+ * Public pages — landing, sign-in, nickname.
+ *
+ * These are web pages, not game screens: scrollable, selectable text, ordinary
+ * form controls sized for a thumb.
+ * ============================================================ */
+.page {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  background: #070d07;
+  user-select: text;
+  -webkit-user-select: text;
+}
+.page.visible { display: block; }
+
+/* With a public page up, nothing from the game should be reachable. */
+body.public #hud, body.public #objective, body.public #touch,
+body.public #dialogue, body.public #titleScreen { display: none; }
+
+.page-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: calc(28px + var(--sa-t)) calc(20px + var(--sa-r))
+           calc(40px + var(--sa-b)) calc(20px + var(--sa-l));
+}
+.page-inner.narrow { max-width: 420px; }
+
+.hero { text-align: center; padding: 18px 0 8px; }
+.hero h1 {
+  margin: 0;
+  font-size: clamp(30px, 11vw, 56px);
+  line-height: .95;
+  letter-spacing: 2px;
+  color: var(--brand);
+  text-shadow: 4px 4px 0 #0a1a12;
+}
+.hero h1 span { display: block; color: var(--paper); }
+.lede {
+  margin: 20px auto 26px;
+  max-width: 30ch;
+  font-size: clamp(14px, 4vw, 18px);
+  line-height: 1.5;
+  color: var(--paper);
+}
+
+.cta {
+  display: inline-block;
+  min-height: 52px;
+  padding: 14px 34px;
+  font-family: var(--font);
+  font-size: clamp(14px, 4vw, 17px);
+  font-weight: bold;
+  letter-spacing: 2px;
+  color: var(--ink);
+  background: var(--brand);
+  border: 3px solid var(--frame);
+  border-radius: 12px;
+  box-shadow: 0 5px 0 var(--brand-dark);
+  cursor: pointer;
+}
+.cta:active { transform: translateY(5px); box-shadow: none; }
+.cta:disabled { opacity: .6; }
+
+#account {
+  margin-top: 16px;
+  font-size: 12px;
+  color: var(--green-lit);
+}
+#account button {
+  margin-left: 8px;
+  padding: 4px 10px;
+  font-family: var(--font);
+  font-size: 11px;
+  color: var(--green-lit);
+  background: transparent;
+  border: 1px solid var(--green-mid);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.page h2 {
+  margin: 34px 0 12px;
+  font-size: clamp(15px, 4.4vw, 20px);
+  letter-spacing: 1px;
+  color: var(--brand);
+}
+
+/* ---------- video ---------- */
+.video { margin-top: 26px; }
+.video iframe, .video-placeholder {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 3px solid var(--green-mid);
+  border-radius: 10px;
+  background: #0a120a;
+}
+.video iframe { border-width: 3px; }
+.video-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: var(--green-lit);
+  font-size: clamp(12px, 3.4vw, 15px);
+  border-style: dashed;
+}
+.video-placeholder .hint { font-size: 11px; color: #4d6a4d; }
+.video-placeholder p { margin: 0; }
+
+/* ---------- leaderboard ---------- */
+.board { list-style: none; margin: 0; padding: 0; counter-reset: rank; }
+.board li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 6px;
+  background: rgba(255, 255, 255, .04);
+  border-left: 4px solid var(--green-mid);
+  border-radius: 5px;
+  font-size: clamp(12px, 3.4vw, 15px);
+}
+.board li:first-child { border-left-color: var(--gold); }
+.board .rank { min-width: 1.6em; color: var(--green-lit); }
+.board .who { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.board .badges { color: var(--gold); font-size: .8em; letter-spacing: -1px; }
+.board .pts { font-weight: bold; color: var(--brand); }
+.board .empty { display: block; border-left-color: #2c3a2c; color: var(--green-lit); font-size: 13px; }
+
+/* ---------- recommendations ---------- */
+.recs blockquote {
+  margin: 0 0 10px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, .04);
+  border-left: 4px solid var(--brand-dark);
+  border-radius: 5px;
+  font-size: clamp(12px, 3.4vw, 15px);
+  line-height: 1.5;
+}
+.recs cite { display: block; margin-top: 7px; font-size: .82em; color: var(--green-lit); font-style: normal; }
+
+.site-footer {
+  margin-top: 40px;
+  padding-top: 18px;
+  border-top: 1px solid #1c2a1c;
+  font-size: 11px;
+  color: #4d6a4d;
+  text-align: center;
+}
+
+/* ---------- sign-in ---------- */
+.muted { color: var(--green-lit); font-size: clamp(11px, 3vw, 13px); line-height: 1.5; }
+
+.method.primary {
+  margin: 22px 0 4px;
+  padding: 16px;
+  background: rgba(62, 207, 142, .07);
+  border: 2px solid var(--brand-dark);
+  border-radius: 12px;
+}
+.method label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: clamp(12px, 3.2vw, 14px);
+  font-weight: bold;
+  color: var(--paper);
+}
+
+.page input[type="email"], .page input[type="password"], .page input[type="text"],
+.page textarea {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 10px;
+  padding: 12px;
+  font-family: var(--font);
+  font-size: 16px;   /* 16px stops iOS Safari zooming the page on focus */
+  color: var(--paper);
+  background: #0a120a;
+  border: 2px solid var(--green-mid);
+  border-radius: 8px;
+}
+.page input:focus, .page textarea:focus { outline: 2px solid var(--brand); border-color: var(--brand); }
+.method.primary .cta { width: 100%; }
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 22px 0;
+  color: #4d6a4d;
+  font-size: 11px;
+}
+.divider::before, .divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #1c2a1c;
+}
+
+.oauth { display: flex; flex-direction: column; gap: 10px; }
+.oauth button {
+  min-height: 50px;
+  font-family: var(--font);
+  font-size: clamp(12px, 3.4vw, 15px);
+  color: var(--paper);
+  background: #101a10;
+  border: 2px solid var(--green-mid);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.oauth button:active { background: var(--green-mid); }
+
+.linkish {
+  display: block;
+  margin: 18px auto 0;
+  padding: 8px;
+  font-family: var(--font);
+  font-size: 12px;
+  color: var(--green-lit);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.pw { display: none; margin-top: 14px; }
+.pw.open { display: block; }
+.pw-actions { display: flex; gap: 10px; }
+.pw-actions button {
+  flex: 1;
+  min-height: 48px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--ink);
+  background: var(--brand);
+  border: 2px solid var(--frame);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.pw-actions .ghost, .result-actions .ghost {
+  color: var(--green-lit);
+  background: transparent;
+  border-color: var(--green-mid);
+}
+
+#loginError, #nickError, #recStatus {
+  min-height: 1.4em;
+  margin-top: 14px;
+  font-size: clamp(11px, 3vw, 13px);
+  line-height: 1.5;
+}
+#loginError.err, #nickError, #recStatus { color: #ffb4a2; }
+#loginError.ok { color: var(--brand); }
+
+/* ---------- results extras ---------- */
+#results .save { min-height: 1.4em; margin: 8px 0 0; font-size: 12px; color: var(--green-lit); }
+.rec-box { margin: 22px 0 0; }
+.rec-box label { display: block; margin-bottom: 8px; font-size: 12px; color: var(--paper); }
+.rec-box textarea { resize: vertical; }
+.rec-box button {
+  min-height: 44px;
+  padding: 0 18px;
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--ink);
+  background: var(--brand);
+  border: 2px solid var(--frame);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.result-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.result-actions .ghost {
+  min-height: 48px;
+  padding: 0 18px;
+  font-family: var(--font);
+  font-size: 13px;
+  border: 3px solid var(--green-mid);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* Monochrome mode recolours the world; the chrome follows so the two don't
+   disagree about which console we're pretending to be. */
+body.mono { --brand: #9bbc0f; --brand-dark: #306230; }
+body.mono #actions button { color: #0f380f; }
