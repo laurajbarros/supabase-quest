@@ -160,10 +160,15 @@ export function suggestedAvatar(user) {
 
 // ---------------------------------------------------------------- scores
 
+// The scores table was migrated to two badge tracks and never migrated back,
+// so the column is platform_badges even though this build only has one route.
+// field_badges stays 0: there is no field route here to earn any.
 export async function submitScore(userId, score, badges) {
   const c = await getClient();
   if (!c) return { error: { message: 'Not configured' } };
-  const { error } = await safe(() => c.from('scores').insert({ user_id: userId, score, badges }));
+  const { error } = await safe(() => c.from('scores').insert({
+    user_id: userId, score, platform_badges: badges, field_badges: 0
+  }));
   return { error };
 }
 
@@ -171,7 +176,7 @@ export async function topScores(limit = 10) {
   const c = await getClient();
   if (!c) return { data: [], error: null };
   const { data, error } = await safe(() => c.from('leaderboard')
-    .select('id, score, badges, completed_at, display_name')
+    .select('id, score, platform_badges, field_badges, completed_at, display_name')
     .limit(limit), []);
   return { data: data || [], error };
 }

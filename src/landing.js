@@ -232,7 +232,7 @@ export async function refreshPublic() {
       <li>
         <span class="rank">${i + 1}</span>
         <span class="who">${escapeHtml(s.display_name)}</span>
-        <span class="badges">${'★'.repeat(s.badges)}</span>
+        <span class="badges">${'\u2605'.repeat(s.platform_badges || 0)}</span>
         <span class="pts">${s.score}</span>
       </li>`).join('');
   }

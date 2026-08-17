@@ -17,12 +17,17 @@ create table if not exists profiles (
 create table if not exists scores (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id) on delete cascade,
-  -- 600 is the maximum a legitimate run can produce: six badges, 100 each.
   -- The score is submitted by the client and is therefore forgeable; this
   -- constraint caps the blast radius. See the README for why that tradeoff
-  -- was made deliberately.
-  score int not null check (score >= 0 and score <= 600),
-  badges int not null check (badges >= 0 and badges <= 6),
+  -- was made deliberately. The ceiling is 1100 rather than this build's
+  -- reachable 600 because the deployed database was migrated for a two-route
+  -- version that has since been reverted; leaving room costs nothing, and
+  -- narrowing it would break the live table.
+  score int not null check (score >= 0 and score <= 1100),
+  -- platform_badges is what this build writes — six encounters, 100 each.
+  -- field_badges is left over from the two-route version and stays 0.
+  platform_badges int not null default 0 check (platform_badges >= 0 and platform_badges <= 6),
+  field_badges int not null default 0 check (field_badges >= 0 and field_badges <= 5),
   completed_at timestamptz default now()
 );
 
@@ -97,12 +102,14 @@ create policy "insert own recs" on recommendations
 -- security_invoker keeps the caller's RLS in force rather than the view
 -- owner's, so this is not a way around the policies above.
 -- ============================================================
-create or replace view leaderboard
+drop view if exists leaderboard;
+create view leaderboard
 with (security_invoker = true) as
   select
     s.id,
     s.score,
-    s.badges,
+    s.platform_badges,
+    s.field_badges,
     s.completed_at,
     p.display_name
   from scores s
