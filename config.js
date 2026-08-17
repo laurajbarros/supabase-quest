@@ -21,8 +21,8 @@ export const SUPABASE_ANON_KEY = 'sb_publishable_OAu98Qr3fjzeLdwitKnTDg_ex1w0D70
 // disappears rather than failing when tapped.
 export const AUTH_METHODS = {
   magicLink: true,
-  google: false,
-  github: false,
+  google: true,
+  github: true,
   password: true
 };
 

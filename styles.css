@@ -698,7 +698,12 @@ body.public #dialogue, body.public #titleScreen { display: none; }
 
 .oauth { display: flex; flex-direction: column; gap: 10px; }
 .oauth button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   min-height: 50px;
+  padding: 0 16px;
   font-family: var(--font);
   font-size: clamp(12px, 3.4vw, 15px);
   color: var(--paper);
@@ -708,6 +713,9 @@ body.public #dialogue, body.public #titleScreen { display: none; }
   cursor: pointer;
 }
 .oauth button:active { background: var(--green-mid); }
+.oauth button:disabled { opacity: .6; cursor: default; }
+/* Fixed box so the two labels start at the same x despite different marks. */
+.oauth svg { width: 20px; height: 20px; flex: none; }
 
 .linkish {
   display: block;

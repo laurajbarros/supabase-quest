@@ -124,10 +124,26 @@ function bind() {
   });
 
   el.oauth.addEventListener('click', async e => {
+    // closest(), not e.target: the click usually lands on the <svg> or a <path>
+    // inside the button rather than the button itself.
     const btn = e.target.closest('[data-provider]');
     if (!btn) return;
+
+    // The redirect can take a beat on a phone. Without feedback the button
+    // looks dead and gets tapped again.
+    const label = btn.querySelector('span');
+    const original = label.textContent;
+    btn.disabled = true;
+    label.textContent = 'Redirecting…';
+    setLoginError('');
+
     const { error } = await db.signInWithProvider(btn.dataset.provider);
-    if (error) setLoginError(db.friendlyError(error));
+    if (error) {
+      btn.disabled = false;
+      label.textContent = original;
+      setLoginError(db.friendlyError(error));
+    }
+    // On success the browser navigates away, so nothing needs resetting.
   });
 
   el.pwToggle.addEventListener('click', () => {
