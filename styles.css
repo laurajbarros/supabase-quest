@@ -766,26 +766,58 @@ body.public #dialogue, body.public #titleScreen { display: none; }
   font-size: clamp(11px, 3vw, 13px);
   line-height: 1.5;
 }
-#loginError.err, #nickError, #recStatus { color: #ffb4a2; }
-#loginError.ok { color: var(--brand); }
+/* Success and failure need different colours — a confirmation rendered in the
+   error red reads as a failure no matter what it says. */
+#loginError.err, #nickError, #recStatus.err { color: #ffb4a2; }
+#loginError.ok, #recStatus.ok { color: var(--brand); }
 
 /* ---------- results extras ---------- */
 #results .save { min-height: 1.4em; margin: 8px 0 0; font-size: 12px; color: var(--green-lit); }
-.rec-box { margin: 22px 0 0; }
-.rec-box label { display: block; margin-bottom: 8px; font-size: 12px; color: var(--paper); }
-.rec-box textarea { resize: vertical; }
-.rec-box button {
-  min-height: 44px;
-  padding: 0 18px;
+/* The results screen isn't a `.page`, so it never picked up the form styling
+   the landing and sign-in screens use — this box was rendering as a raw
+   browser textarea at its default 20 columns. */
+.rec-box { margin: 26px 0 0; }
+.rec-box label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: clamp(12px, 3.2vw, 14px);
+  color: var(--paper);
+}
+.rec-box textarea {
+  display: block;
+  width: 100%;
+  min-height: 96px;
+  margin-bottom: 12px;
+  padding: 12px;
   font-family: var(--font);
-  font-size: 13px;
+  font-size: 16px;   /* 16px stops iOS Safari zooming the page on focus */
+  line-height: 1.5;
+  color: var(--paper);
+  background: #0a120a;
+  border: 2px solid var(--green-mid);
+  border-radius: 8px;
+  resize: vertical;
+}
+.rec-box textarea:focus { outline: 2px solid var(--brand); border-color: var(--brand); }
+.rec-box textarea::placeholder { color: #4d6a4d; }
+.rec-box button {
+  min-height: 48px;
+  padding: 0 22px;
+  font-family: var(--font);
+  font-size: clamp(13px, 3.4vw, 15px);
   font-weight: bold;
   color: var(--ink);
   background: var(--brand);
-  border: 2px solid var(--frame);
-  border-radius: 8px;
+  border: 3px solid var(--frame);
+  border-radius: 10px;
+  box-shadow: 0 4px 0 var(--brand-dark);
   cursor: pointer;
 }
+.rec-box button:active { transform: translateY(4px); box-shadow: none; }
+.rec-box button:disabled { opacity: .6; box-shadow: none; }
+.rec-actions { display: flex; align-items: center; gap: 12px; }
+#recCount { font-size: 12px; color: #4d6a4d; }
+#recCount.full { color: var(--gold); }
 .result-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
 .result-actions .ghost {
   min-height: 48px;

@@ -98,9 +98,12 @@ export function showResults({ onPlayAgain, onHome, save = null, recommend = null
     ${recommend ? `
       <div class="rec-box">
         <label for="recInput">Leave a note (optional, 200 characters)</label>
-        <textarea id="recInput" maxlength="200" rows="3"
+        <textarea id="recInput" maxlength="200"
                   placeholder="Anything you'd want the Supabase team to read."></textarea>
-        <button type="button" id="btnRec">Send</button>
+        <div class="rec-actions">
+          <button type="button" id="btnRec">Send</button>
+          <span id="recCount">0/200</span>
+        </div>
         <p id="recStatus" role="status" aria-live="polite"></p>
       </div>` : ''}
     <div class="result-actions">
@@ -120,6 +123,15 @@ export function showResults({ onPlayAgain, onHome, save = null, recommend = null
 
   if (recommend) {
     const btn = document.getElementById('btnRec');
+    const count = document.getElementById('recCount');
+    const field = document.getElementById('recInput');
+    // The 200-character cap is enforced by maxlength, by a check constraint in
+    // the schema, and by a slice before insert. Showing the remaining budget
+    // stops it being discovered by silently losing the end of a sentence.
+    field.addEventListener('input', () => {
+      count.textContent = `${field.value.length}/200`;
+      count.classList.toggle('full', field.value.length >= 200);
+    });
     btn.addEventListener('click', async () => {
       const input = document.getElementById('recInput');
       const text = input.value.trim();
@@ -129,11 +141,13 @@ export function showResults({ onPlayAgain, onHome, save = null, recommend = null
       btn.textContent = 'Sending…';
       const message = await recommend(text);
       btn.textContent = 'Send';
+      const failed = message.startsWith('Could');
       status.textContent = message;
+      status.className = failed ? 'err' : 'ok';
       // Held until approved in the dashboard, so say so rather than implying
       // it's already on the wall.
-      if (!message.startsWith('Could')) { input.disabled = true; btn.style.display = 'none'; }
-      else btn.disabled = false;
+      if (failed) btn.disabled = false;
+      else { input.disabled = true; btn.style.display = 'none'; }
     });
   }
 
