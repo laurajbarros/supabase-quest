@@ -154,6 +154,37 @@ The map is baked into one offscreen canvas at load, so a frame costs one
 
 ---
 
+### Auth flow: implicit, on purpose
+
+Sign-in follows the pattern in the [GitHub](https://supabase.com/docs/guides/auth/social-login/auth-github)
+and [Google](https://supabase.com/docs/guides/auth/social-login/auth-google)
+guides — `signInWithOAuth({ provider, options: { redirectTo } })`, with
+`detectSessionInUrl` completing the session when the browser comes back.
+
+That leaves it on supabase-js's default **implicit** flow rather than PKCE. PKCE
+is the more secure of the two — the token arrives as a `?code=` to be exchanged
+instead of sitting in the URL fragment — and it works in a static site like this
+one without a server, since the verifier lives in localStorage.
+
+I stayed on implicit anyway, for one reason: PKCE ties a magic link to the
+browser that requested it. Ask for a link on a laptop, open the email on a
+phone, and the verifier isn't there — the sign-in fails. For a game whose whole
+point is that someone opens it on their phone for three minutes, that's a
+likely path, and magic link is the sign-in method I put first and largest.
+
+The thing being protected is a display name and a score on a public
+leaderboard. Given that, cross-device sign-in is worth more than keeping the
+token out of a URL fragment. On an app holding anything that matters, I'd
+switch — it's one line:
+
+```js
+createClient(URL, KEY, { auth: { flowType: 'pkce' } })
+```
+
+Google's `queryParams: { access_type: 'offline', prompt: 'consent' }` is
+deliberately omitted too: that's for getting a refresh token to call Google's
+own APIs on the user's behalf, which this app never does.
+
 ## The RLS policies
 
 The whole point of the schema. Three tables, all with RLS on.
