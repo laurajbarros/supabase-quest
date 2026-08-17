@@ -1,14 +1,29 @@
-// Run state: badges, score, and what's been seen.
+// Run state: two badge tracks, a score, a job title, and what's been seen.
 //
-// Persisted to localStorage after every change, so an interrupted run on a
-// phone (a call, a locked screen, a closed tab) survives.
+// Persisted after every change, so an interrupted run on a phone (a call, a
+// locked screen, a closed tab) survives.
 
-import { NPC_ORDER, NPC_CONTENT } from './content.js';
+import {
+  FIELD_ORDER, PLATFORM_ORDER, NPC_CONTENT, TITLES, PROMOTIONS,
+  SCORE_CORRECT, SCORE_WRONG_FIELD, SCORE_WRONG_PLATFORM
+} from './content.js';
 
-const KEY = 'sbq_progress_v1';
-export const GATE_REQUIREMENT = 5;   // badges needed to open the Multigres site
+const KEY = 'sbq_progress_v2';
 
-const blank = () => ({ badges: [], score: 0, seen: {}, gateOpen: false });
+export const ROUTE_GATE_REQUIREMENT = 5;    // field badges to reach Route 2
+export const CEILING_REQUIREMENT = 5;       // platform badges to open the hoarding
+export const OFFICE_REQUIREMENT = 4;        // platform badges to open the closing room
+
+const blank = () => ({
+  field: [],
+  platform: [],
+  score: 0,
+  title: TITLES.start,
+  seen: {},
+  routeOpen: false,
+  gateOpen: false,
+  officeOpen: false
+});
 
 export let run = blank();
 
@@ -16,11 +31,11 @@ export function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (raw) {
-      const parsed = JSON.parse(raw);
-      run = { ...blank(), ...parsed };
+      run = { ...blank(), ...JSON.parse(raw) };
       // Drop anything that isn't a real badge id — a stale save from an older
-      // build shouldn't be able to push the count past six.
-      run.badges = (run.badges || []).filter(id => NPC_ORDER.includes(id));
+      // build shouldn't be able to push either count past its maximum.
+      run.field = (run.field || []).filter(id => FIELD_ORDER.includes(id));
+      run.platform = (run.platform || []).filter(id => PLATFORM_ORDER.includes(id));
     }
   } catch {
     run = blank();
@@ -42,20 +57,46 @@ export function reset() {
   save();
 }
 
-export function hasBadge(id) { return run.badges.includes(id); }
-export function badgeCount() { return run.badges.length; }
-export function isComplete() { return run.badges.length >= NPC_ORDER.length; }
+export const hasBadge = id => run.field.includes(id) || run.platform.includes(id);
+export const fieldCount = () => run.field.length;
+export const platformCount = () => run.platform.length;
+export const fieldComplete = () => run.field.length >= FIELD_ORDER.length;
+export const platformComplete = () => run.platform.length >= PLATFORM_ORDER.length;
+export const isComplete = () => fieldComplete() && platformComplete();
 
+// Returns what changed, so the caller can stage the toasts and animations.
 export function award(id, correct) {
-  if (hasBadge(id)) return { badge: false, gateJustOpened: false };
-  run.badges.push(id);
-  run.score += correct ? 100 : 50;
+  const content = NPC_CONTENT[id];
+  if (!content || hasBadge(id)) return { badge: false };
 
-  const gateJustOpened = !run.gateOpen && run.badges.length >= GATE_REQUIREMENT;
+  const isField = content.route === 1;
+  (isField ? run.field : run.platform).push(id);
+
+  const wrongValue = isField ? SCORE_WRONG_FIELD : SCORE_WRONG_PLATFORM;
+  run.score += correct ? SCORE_CORRECT : wrongValue;
+
+  // Titles only move on Route 1: the field is where the career happened.
+  const promotion = PROMOTIONS[id] || null;
+  if (promotion) run.title = promotion;
+
+  const routeJustOpened = !run.routeOpen && run.field.length >= ROUTE_GATE_REQUIREMENT;
+  if (routeJustOpened) run.routeOpen = true;
+
+  const gateJustOpened = !run.gateOpen && run.platform.length >= CEILING_REQUIREMENT;
   if (gateJustOpened) run.gateOpen = true;
 
+  const officeJustOpened = !run.officeOpen && run.platform.length >= OFFICE_REQUIREMENT;
+  if (officeJustOpened) run.officeOpen = true;
+
   save();
-  return { badge: true, gateJustOpened };
+  return { badge: true, isField, promotion, routeJustOpened, gateJustOpened, officeJustOpened };
+}
+
+export function setTitle(title) {
+  if (run.title === title) return false;
+  run.title = title;
+  save();
+  return true;
 }
 
 export function markSeen(id) {
@@ -63,18 +104,21 @@ export function markSeen(id) {
   save();
 }
 
-export function hasSeen(id) { return !!run.seen[id]; }
+export const hasSeen = id => !!run.seen[id];
 
-// The next unvisited stop, in narrative order. Multigres is skipped until its
-// gate is open — pointing at a locked fence is a worse hint than none.
+// The next unvisited stop, in narrative order. Route 2 only starts suggesting
+// once the gate is open, and the Ceiling stays quiet while it's still fenced —
+// pointing at a locked gate is a worse hint than none.
 export function nextTarget() {
-  return NPC_ORDER.find(id => {
+  const field = FIELD_ORDER.find(id => !hasBadge(id));
+  if (field) return field;
+  if (!run.routeOpen) return null;
+  return PLATFORM_ORDER.find(id => {
     if (hasBadge(id)) return false;
-    if (id === 'multigres' && !run.gateOpen) return false;
+    if (id === 'ceiling' && !run.gateOpen) return false;
     return true;
   }) || null;
 }
 
-export function badgeLabels() {
-  return run.badges.map(id => NPC_CONTENT[id].badge);
-}
+export const badgeLabels = () =>
+  [...run.field, ...run.platform].map(id => NPC_CONTENT[id].badge);

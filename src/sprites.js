@@ -61,6 +61,19 @@ function drawHuman(p, o, dir, legs) {
     if (o.coat) p.rect(9, 8, 4, 3, o.coat);
   }
 
+  // Hair past the ears. Confined to rows 5-7, the band between the head and the
+  // shoulders: the arms start at row 8, and hair drawn over them turns the
+  // hands into smudges at this size.
+  if (o.longHair) {
+    if (dir === 'up' || dir === 'down') {
+      p.rect(2, 5, 2, 3, hair);
+      p.rect(12, 5, 2, 3, hair);
+      if (dir === 'up') p.rect(4, 7, 8, 1, hair);   // falls down the back
+    } else {
+      p.rect(11, 5, 3, 3, hair);
+    }
+  }
+
   if (o.hat) {
     // Sits over whatever hair was drawn, with a brim on the facing side.
     p.rect(3, 1, 10, 2, o.hat);
@@ -130,12 +143,66 @@ function makeRig() {
 // The cast. Colours do the characterisation: the professor is grey and
 // bespectacled in a lab coat, the bouncer is broad and dark, Reggie is loud.
 const CAST = {
-  player:     () => makeHuman({ skin: SKIN.mid, hair: HAIR.brown, shirt: C.brand, pants: '#39405c', shoes: '#242424' }),
-  postgres:   () => makeHuman({ skin: SKIN.light, hair: HAIR.grey, shirt: '#4a6fa5', pants: '#3c3c44', shoes: '#282828', coat: C.paper, glasses: C.ink, beard: HAIR.grey }),
-  rowena:     () => makeHuman({ skin: SKIN.deep, hair: HAIR.black, shirt: '#2b3a4a', pants: '#20242c', shoes: '#181818', badge: C.gold }),
+  // The player is Laura, not a generic sprite — the game is her career.
+  player: () => makeHuman({
+    skin: SKIN.mid, hair: '#3b2416', longHair: true,
+    shirt: C.brand, pants: '#39405c', shoes: '#242424'
+  }),
+  // The same figure, seated at the desk in the closing room.
+  laura: () => makeHuman({
+    skin: SKIN.mid, hair: '#3b2416', longHair: true,
+    shirt: C.brand, pants: '#39405c', shoes: '#242424'
+  }),
+
+  // ---- Route 1: the field -------------------------------------------------
+  foreman: () => makeHuman({
+    skin: SKIN.light, hair: HAIR.grey, shirt: '#7a6a52', pants: '#4a4238',
+    shoes: '#2e2820', hat: C.amber, beard: HAIR.grey
+  }),
+  adops: () => makeHuman({
+    skin: SKIN.deep, hair: HAIR.black, longHair: true,
+    shirt: '#8a4a7a', pants: '#3a2c3a', shoes: '#241c24', badge: C.gold
+  }),
+  librarian: () => makeHuman({
+    skin: SKIN.light, hair: HAIR.grey, longHair: true,
+    shirt: '#4a6fa5', pants: '#33384a', shoes: '#242424', glasses: C.ink
+  }),
+  miner: () => makeHuman({
+    skin: SKIN.darker, hair: HAIR.black, shirt: '#6a5a3a', pants: '#40382a',
+    shoes: '#221e18', hat: C.amber
+  }),
+  crossroads: () => makeHuman({
+    skin: SKIN.mid, hair: HAIR.brown, shirt: '#3a5a4a', pants: '#2c3a34',
+    shoes: '#1c2420', coat: '#7a6a52', hat: '#5a4a38'
+  }),
+
+  // ---- Route 2: the platform ----------------------------------------------
+  architect: () => makeHuman({
+    skin: SKIN.light, hair: HAIR.grey, shirt: '#4a6fa5', pants: '#3c3c44',
+    shoes: '#282828', coat: C.paper, glasses: C.ink, beard: HAIR.grey
+  }),
+  founder: () => makeHuman({
+    skin: SKIN.mid, hair: HAIR.black, shirt: '#2b3a4a', pants: '#20242c',
+    shoes: '#181818', badge: C.danger
+  }),
+  cfo: () => makeHuman({
+    skin: SKIN.light, hair: HAIR.grey, shirt: '#2e2e38', pants: '#24242c',
+    shoes: '#141414', coat: '#3a3a46', glasses: C.ink
+  }),
+  pm: () => makeHuman({
+    skin: SKIN.light, hair: '#c8501e', shirt: C.gold, pants: '#4a3a2a', shoes: '#8a3a1a'
+  }),
+  engineer: () => makeHuman({
+    skin: SKIN.deep, hair: HAIR.black, shirt: '#3a4a6a', pants: '#2a3040',
+    shoes: '#1a1a20', glasses: C.ink
+  }),
+  cto: () => makeHuman({
+    skin: SKIN.darker, hair: HAIR.black, shirt: '#1e1e26', pants: '#1a1a20',
+    shoes: '#101010', coat: '#2a2a34'
+  }),
+
+  // Kept from the original cast: still used as scenery-scale props.
   servicekey: () => makeKey(),
-  realtime:   () => makeHuman({ skin: SKIN.light, hair: '#c8501e', shirt: C.gold, pants: '#4a3a2a', shoes: '#8a3a1a' }),
-  supavisor:  () => makeHuman({ skin: SKIN.darker, hair: HAIR.black, shirt: '#1e1e26', pants: '#1a1a20', shoes: '#101010', coat: '#2a2a34', glasses: '#101010' }),
   multigres:  () => makeRig(),
   hidden:     () => makeHuman({ skin: SKIN.mid, hair: HAIR.black, shirt: '#4a3a5a', pants: '#2e2438', shoes: '#1c1c1c', hat: '#3a2e48' })
 };

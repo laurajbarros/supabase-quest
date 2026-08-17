@@ -12,6 +12,9 @@
   --brand-dark: #249b6b;
   --gold:       #f8d030;
   --gold-dark:  #b88c08;
+  --amber:      #d9a441;
+  --amber-dark: #9a6f22;
+  --amber-light:#f0c777;
   --paper:      #f8f8e8;
   --ink:        #182818;
   --frame:      #0d1410;
@@ -71,47 +74,72 @@ html, body {
 
 #hudLeft {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 3px;
   min-width: 0;
-  padding: 5px 12px;
-  background: rgba(10, 18, 10, .78);
+  padding: 7px 13px;
+  background: rgba(10, 18, 10, .8);
   border: 2px solid var(--green-mid);
-  border-radius: 999px;
+  border-radius: 12px;
   backdrop-filter: blur(3px);
 }
 
-#hudTitle {
-  font-size: clamp(10px, 3vw, 13px);
-  font-weight: bold;
+/* ---------- job title ---------- */
+#hudJob {
+  font-size: clamp(10px, 2.9vw, 13px);
+  line-height: 1.25;
+  letter-spacing: .5px;
+  color: var(--paper);
+  /* Wraps rather than truncating: the longest title ends in "(pending)", and
+     an ellipsis would eat the one word the line exists to deliver. */
+  max-width: 62vw;
+}
+#hudJob b { color: var(--amber); }
+#hudTitle { color: var(--brand); }
+
+/* The promotion flash. A title that changes silently reads as a typo; a title
+   that flares reads as a promotion, which is the whole point of Route 1. */
+#hudJob.promoted { animation: promote 1.5s ease-out 1; }
+@keyframes promote {
+  0%   { transform: scale(1); }
+  12%  { transform: scale(1.12); filter: brightness(2.2); }
+  30%  { transform: scale(1); filter: brightness(1); }
+  45%  { filter: brightness(2.2); }
+  60%  { filter: brightness(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  #hudJob.promoted { animation: none; outline: 2px solid var(--gold); outline-offset: 3px; }
+}
+
+/* ---------- badge tracks ---------- */
+.track {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: clamp(8px, 2.3vw, 10px);
   letter-spacing: 1px;
-  color: var(--brand);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 38vw;
 }
-
-#hudBar {
-  flex: none;
-  width: clamp(44px, 14vw, 90px);
+.track-label { width: 62px; flex: none; color: #7d8c7d; }
+.track-count { color: #7d8c7d; }
+.dots { display: flex; gap: 3px; }
+.dots i {
+  width: 8px;
   height: 8px;
-  border: 2px solid var(--green-mid);
-  border-radius: 999px;
-  background: #0a120a;
-  overflow: hidden;
+  border-radius: 50%;
+  background: #2c3a2c;
+  border: 1px solid #3e4c3e;
 }
+/* Amber is the field, accent green is the platform — the two halves of the
+   game are told apart by colour everywhere they appear. */
+.track.field .dots i.on { background: var(--amber); border-color: var(--amber-light); }
+.track.platform .dots i.on { background: var(--brand); border-color: var(--brand-light); }
+.track.field .track-label { color: var(--amber); }
+.track.platform .track-label { color: var(--brand); }
 
-#hudBarFill {
-  width: 0%;
-  height: 100%;
-  background: linear-gradient(90deg, var(--brand-dark), var(--brand));
-  transition: width .45s cubic-bezier(.2, .9, .3, 1);
-}
-
-#hudCount { font-size: clamp(9px, 2.6vw, 12px); color: var(--green-lit); white-space: nowrap; }
-
-#hudRight { display: flex; gap: 8px; pointer-events: auto; }
+/* ---------- HUD buttons ---------- */
+/* #hud itself is pointer-events:none so the map stays draggable underneath;
+   this row has to opt back in or none of the buttons can be tapped. */
+#hudRight { display: flex; gap: 8px; flex: none; pointer-events: auto; }
 
 #hudRight button {
   width: 42px;
@@ -132,7 +160,8 @@ html, body {
 /* ---------- objective chip ---------- */
 #objective {
   position: absolute;
-  top: calc(54px + var(--sa-t));
+  /* Clears the three-line HUD (title + two badge tracks). */
+  top: calc(92px + var(--sa-t));
   left: calc(8px + var(--sa-l));
   right: calc(8px + var(--sa-r));
   z-index: 5;
@@ -242,21 +271,11 @@ body.touch #touch { display: block; }
   #btnA.hint { animation: none; box-shadow: 0 4px 0 var(--brand-dark), 0 0 0 4px rgba(62, 207, 142, .5); }
 }
 
-/* ---------- badge row ---------- */
-/* Six stars, a bar, a counter and three buttons don't fit across a 412px phone.
-   The word "CERTIFICATION" is the one piece that's pure decoration — the quest
-   log says it in full — so it's what goes. */
-@media (max-width: 480px) { #hudTitle { display: none; } }
-
-#hudBadges { display: flex; gap: 2px; font-size: 11px; line-height: 1; }
-#hudBadges i { color: #2c3a2c; font-style: normal; }
-#hudBadges i.on { color: var(--gold); }
-
 /* ---------- toast ---------- */
 #toast {
   position: absolute;
   left: 50%;
-  top: calc(100px + var(--sa-t));
+  top: calc(140px + var(--sa-t));
   transform: translate(-50%, -8px);
   z-index: 9;
   max-width: 84vw;
@@ -469,6 +488,35 @@ body.results #hud, body.results #objective, body.results #touch { display: none;
 .quests .mark { color: var(--gold); }
 .quests .who { flex: 1; }
 .quests .note { font-size: .82em; color: var(--green-lit); }
+
+/* Track headings in the quest log, colour-coded like the HUD. */
+.track-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 22px 0 8px;
+  font-size: clamp(11px, 3vw, 13px);
+  letter-spacing: 1px;
+}
+.track-head.field { color: var(--amber); }
+.track-head.platform { color: var(--brand); }
+.track-head span { font-size: .9em; opacity: .8; }
+
+.result-tracks { display: flex; flex-direction: column; gap: 8px; margin: 16px 0 4px; }
+.result-tracks .track { font-size: clamp(10px, 2.8vw, 12px); }
+.result-tracks .dots i { width: 11px; height: 11px; }
+
+.sendoff {
+  margin: 22px 0 0;
+  padding: 14px 16px;
+  font-size: clamp(13px, 3.6vw, 16px);
+  line-height: 1.6;
+  color: var(--paper);
+  background: rgba(255, 255, 255, .04);
+  border-left: 4px solid var(--amber);
+  border-radius: 5px;
+}
+.sendoff cite { display: block; margin-top: 10px; font-style: normal; color: var(--green-lit); }
 
 #results .score {
   margin: 10px 0;
