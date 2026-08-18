@@ -201,7 +201,10 @@ function showLogin() {
   const anyOauth = [...el.oauth.querySelectorAll('[data-provider]')].some(b => b.style.display !== 'none');
   el.oauth.style.display = anyOauth ? '' : 'none';
   document.getElementById('oauthDivider').style.display = anyOauth ? '' : 'none';
+  // Hide the form too, not just its toggle: a stale `open` class would
+  // otherwise leave a dead sign-in form on screen.
   el.pwToggle.style.display = db.AUTH_METHODS.password ? '' : 'none';
+  el.pwForm.style.display = db.AUTH_METHODS.password ? '' : 'none';
   show('login');
 }
 

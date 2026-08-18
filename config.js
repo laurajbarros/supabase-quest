@@ -23,7 +23,11 @@ export const AUTH_METHODS = {
   magicLink: true,
   google: true,
   github: true,
-  password: true
+  // Off until custom SMTP exists. Signing in to an existing account needs no
+  // email, but creating one sends a confirmation through the same built-in
+  // service that only delivers to organisation members — so nobody outside the
+  // org can get an account to sign in with.
+  password: false
 };
 
 // Set to true once a custom SMTP provider is configured in
