@@ -121,9 +121,11 @@ export function showResults({ onPlayAgain, onHome, save = null, recommend = null
     <p id="saveStatus" class="save" role="status" aria-live="polite"></p>
     ${recommend ? `
       <div class="rec-box">
-        <label for="recInput">Leave a note (optional, 200 characters)</label>
+        <label for="recInput">Leave a note</label>
+        <p class="rec-ask">If you have advice on how Laura can land herself at
+          Supabase, please leave it here \u2014 and what you thought of the game.</p>
         <textarea id="recInput" maxlength="200"
-                  placeholder="Anything you'd want the Supabase team to read."></textarea>
+                  placeholder="Advice, or what you made of it."></textarea>
         <div class="rec-actions">
           <button type="button" id="btnRec">Send</button>
           <span id="recCount">0/200</span>
@@ -133,8 +135,6 @@ export function showResults({ onPlayAgain, onHome, save = null, recommend = null
     <div class="result-actions">
       <a class="ghost link" href="https://www.linkedin.com/in/laurajbarros/"
          target="_blank" rel="noopener">LinkedIn</a>
-      <a class="ghost link" href="https://github.com/laurajbarros/supabase-quest"
-         target="_blank" rel="noopener">Repo</a>
       <button class="again" data-again>Play again</button>
       <button class="ghost" data-home>Back to the page</button>
     </div>

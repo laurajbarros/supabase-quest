@@ -293,13 +293,17 @@ function frame(now) {
 
 // ---------------------------------------------------------------- input glue
 
-let lastDirLatch = null;
-
-function pumpMenuInput() {
-  if (!dialogue.isChoosing()) { lastDirLatch = null; return; }
-  const dir = input.held.up ? 'up' : input.held.down ? 'down' : null;
-  if (dir && dir !== lastDirLatch) dialogue.moveChoice(dir === 'down' ? 1 : -1);
-  lastDirLatch = dir;
+// onDirection fires once per press (keyboard auto-repeat is filtered, and the
+// touch pad is hidden during dialogue), so each event is exactly one move.
+//
+// This used to compare against a latch of the last direction, which got stuck:
+// releasing a key fires no event, so pressing Down twice in a row saw the same
+// value both times and moved once. Selecting an option after a wrong answer
+// often needed several presses.
+function pumpMenuInput(dir) {
+  if (!dialogue.isChoosing()) return;
+  if (dir === 'up') dialogue.moveChoice(-1);
+  else if (dir === 'down') dialogue.moveChoice(1);
 }
 
 function onAction() {

@@ -60,7 +60,8 @@ export const NPC_CONTENT = {
     badge: 'DETERMINATION',
     hint: 'The school, north of the bus stop.',
     beats: [
-      'You want to study at the best university in Latin America.',
+      'You want to study at the University of S\u00e3o Paulo.',
+      'The best university in Latin America.',
       "Problem: your high school didn't exactly prepare you for that."
     ],
     quiz: {
@@ -76,7 +77,7 @@ export const NPC_CONTENT = {
           retort: 'The cutoff score did not move. It never does. Try again.'
         }
       ],
-      win: 'You got in. DETERMINATION BADGE obtained!'
+      win: 'You got in. University of S\u00e3o Paulo. DETERMINATION BADGE obtained!'
     },
     postWin: 'Still the hardest exam you ever took.'
   },
