@@ -119,7 +119,7 @@ function buildTown(g) {
     .forEach(([x, y]) => set(g, x, y, 'tree'));
   [[13, 10], [20, 13], [5, 18]].forEach(([x, y]) => set(g, x, y, 'bush'));
   [[17, 13], [9, 13], [25, 17], [3, 16]].forEach(([x, y]) => set(g, x, y, 'flowers'));
-  [[14, 16], [22, 11]].forEach(([x, y]) => set(g, x, y, 'grassAlt'));
+  [[14, 16], [27, 10]].forEach(([x, y]) => set(g, x, y, 'grassAlt'));
   fill(g, 13, 19, 5, 1, 'plaza');
 }
 
@@ -144,17 +144,19 @@ function buildOffice(g) {
   fill(g, 3, OFFICE + 9, MAP_W - 6, 2, 'carpet');
 
   // Meeting rooms, two near the entrance and two at the back.
-  gym(g, { x: 2,  y: OFFICE + 2,  w: 6, h: 4, doorX: 4 });
-  gym(g, { x: 22, y: OFFICE + 2,  w: 6, h: 4, doorX: 24 });
-  gym(g, { x: 2,  y: OFFICE + 13, w: 6, h: 4, doorX: 4 });
-  gym(g, { x: 22, y: OFFICE + 13, w: 6, h: 4, doorX: 24 });
+  // Inset by one from the outer wall: flush against it, a meeting room's own
+  // wall merges with the building's and the room stops reading as a room.
+  gym(g, { x: 3,  y: OFFICE + 2,  w: 6, h: 4, doorX: 5 });
+  gym(g, { x: 21, y: OFFICE + 2,  w: 6, h: 4, doorX: 23 });
+  gym(g, { x: 3,  y: OFFICE + 13, w: 6, h: 4, doorX: 5 });
+  gym(g, { x: 21, y: OFFICE + 13, w: 6, h: 4, doorX: 23 });
 
   // Desks, so the floor reads as somewhere people work.
   [[9, 25], [10, 25], [19, 25], [20, 25],
    [9, 29], [10, 29], [19, 29], [20, 29],
    [9, 38], [10, 38], [19, 38], [20, 38]]
     .forEach(([x, y]) => set(g, x, y, 'workstation'));
-  [[6, 27], [24, 27], [6, 40], [24, 40]].forEach(([x, y]) => set(g, x, y, 'plant'));
+  [[10, 32], [19, 32], [10, 43], [19, 43]].forEach(([x, y]) => set(g, x, y, 'plant'));
   set(g, 20, 34, 'coffeeMachine');
 
   // The League door sits in the back wall. Shut until all seven badges.
@@ -203,10 +205,10 @@ export const NPCS = [
   { id: 'rival1', char: 'rival',  x: 17, y: 20, dir: 'left',  name: 'Rival' },
 
   // ---- Region 2: RebelMouse
-  { id: 'listening', char: 'featureRequest', x: 4,  y: OFFICE + 5,  dir: 'down', name: 'The Feature Request' },
-  { id: 'order',     char: 'inbox',          x: 24, y: OFFICE + 5,  dir: 'down', name: 'The Inbox' },
-  { id: 'architect', char: 'dejaVu',         x: 4,  y: OFFICE + 16, dir: 'down', name: 'D\u00e9j\u00e0 Vu' },
-  { id: 'ai',        char: 'industry',       x: 24, y: OFFICE + 16, dir: 'down', name: 'The Industry' },
+  { id: 'listening', char: 'featureRequest', x: 5,  y: OFFICE + 5,  dir: 'down', name: 'The Feature Request' },
+  { id: 'order',     char: 'inbox',          x: 23, y: OFFICE + 5,  dir: 'down', name: 'The Inbox' },
+  { id: 'architect', char: 'dejaVu',         x: 5,  y: OFFICE + 16, dir: 'down', name: 'D\u00e9j\u00e0 Vu' },
+  { id: 'ai',        char: 'industry',       x: 23, y: OFFICE + 16, dir: 'down', name: 'The Industry' },
 
   { id: 'hoodie',        char: 'hoodie',        x: 8,  y: 26, dir: 'right', name: 'Engineer in a Hoodie' },
   { id: 'salesRep',      char: 'salesRep',      x: 21, y: 26, dir: 'left',  name: 'Sales Rep' },

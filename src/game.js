@@ -59,23 +59,30 @@ function interactables() {
       out.push({ x: n.x, y: n.y });
     }
   }
-  out.push({ x: TOWN_SIGN.x, y: TOWN_SIGN.y }, { x: BUS_STOP.x, y: BUS_STOP.y });
+  for (const sign of SIGNS) {
+    if (!progress.hasSeen(sign.id)) out.push({ x: sign.x, y: sign.y });
+  }
   return out;
 }
 
 // ---------------------------------------------------------------- interaction
+
+// Readable scenery. Given ids so a read one can be marked seen and drop its
+// marker, exactly as talking to a person does.
+const SIGNS = [
+  { id: 'townSign', x: TOWN_SIGN.x, y: TOWN_SIGN.y, name: 'SIGN',
+    beats: ['THE BEGINNING', 'Population: enough.'] },
+  { id: 'busStop', x: BUS_STOP.x, y: BUS_STOP.y, name: 'BUS STOP',
+    beats: ['BUS STOP', 'Next bus: eventually.'] }
+];
 
 function targetInFront() {
   const f = facingTile();
   const npc = npcAt(f.x, f.y);
   if (npc) return { kind: 'npc', npc };
 
-  if (f.x === TOWN_SIGN.x && f.y === TOWN_SIGN.y) {
-    return { kind: 'sign', name: 'SIGN', beats: ['THE BEGINNING', 'Population: enough.'] };
-  }
-  if (f.x === BUS_STOP.x && f.y === BUS_STOP.y) {
-    return { kind: 'sign', name: 'BUS STOP', beats: ['BUS STOP', 'Next bus: eventually.'] };
-  }
+  const sign = SIGNS.find(sg => sg.x === f.x && sg.y === f.y);
+  if (sign) return { kind: 'sign', id: sign.id, name: sign.name, beats: sign.beats };
   if (f.x === ROUTE_GATE.x && f.y === ROUTE_GATE.y && !progress.run.region2Open) {
     return { kind: 'sign', name: 'ROAD', beats: REGION2_LOCKED_BEATS };
   }
@@ -90,7 +97,11 @@ function interact() {
   if (!target) return;
 
   if (target.kind === 'sign') {
-    openTalk(target.beats, { name: target.name, speaker: 'sign' });
+    openTalk(target.beats, {
+      name: target.name,
+      speaker: 'sign',
+      onDone: () => { if (target.id) progress.markSeen(target.id); }
+    });
     return;
   }
 
