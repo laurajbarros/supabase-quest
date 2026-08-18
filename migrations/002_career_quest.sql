@@ -22,10 +22,22 @@
 --
 -- `platform_badges` does carry across: both models count badges, and the old
 -- maximum of 6 is inside the new maximum of 7.
-update scores set field_badges = 0 where field_badges <> 0;
+-- Guarded so the whole migration is safe to re-run: on a project where it has
+-- already been applied these columns are gone, and an unguarded statement would
+-- fail with "column does not exist" rather than doing nothing.
+do $$
+begin
+  if exists (select 1 from information_schema.columns
+             where table_name = 'scores' and column_name = 'field_badges') then
+    update scores set field_badges = 0 where field_badges <> 0;
+    alter table scores rename column field_badges to trials;
+  end if;
 
-alter table scores rename column platform_badges to badges;
-alter table scores rename column field_badges to trials;
+  if exists (select 1 from information_schema.columns
+             where table_name = 'scores' and column_name = 'platform_badges') then
+    alter table scores rename column platform_badges to badges;
+  end if;
+end $$;
 
 -- Constraints are dropped and recreated rather than altered: Postgres has no
 -- ALTER CONSTRAINT for a check.
