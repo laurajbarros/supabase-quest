@@ -8,6 +8,9 @@ import { run, badgeCount, trialCount, allBadges } from './progress.js';
 
 let el = {};
 let toastTimer = null;
+let howToPlay = () => {};
+
+export function onHowToPlay(fn) { howToPlay = fn; }
 
 export function init() {
   el = {
@@ -87,9 +90,13 @@ function paintQuestLog() {
     <ul class="quests">${rows}</ul>
     <p class="muted">Badges are earned in gyms. Look for the pink roofs and the
       badge over the door.</p>
-    <button class="close" data-close="panel">Close</button>
+    <div class="panel-actions">
+      <button class="ghost" data-howto>How to play</button>
+      <button class="close" data-close="panel">Close</button>
+    </div>
   `;
   el.panelInner.querySelector('[data-close="panel"]').addEventListener('click', closeQuestLog);
+  el.panelInner.querySelector('[data-howto]').addEventListener('click', () => howToPlay());
 }
 
 // ---------- results ----------

@@ -297,7 +297,6 @@ function startPlaying() {
 
 function startNewRun() {
   progress.reset();
-  progress.markSeen('mentorIntro');
   resetPlayer();
   refreshWorld();
   updateHud();
@@ -314,6 +313,14 @@ function bindChrome() {
   });
 
   document.getElementById('btnMenu').addEventListener('click', () => screens.toggleQuestLog());
+
+  // "How to play" in the badge case replays the Mentor's briefing. It's the
+  // only place the loop is stated outright, and it's easy to tap through the
+  // first time — so it needs to be reachable forever, not once.
+  screens.onHowToPlay(() => {
+    screens.closeQuestLog();
+    openTalk(MENTOR_BEATS, { name: 'The Mentor', speaker: 'mentor' });
+  });
 
   const mute = document.getElementById('btnMute');
   const paintMute = () => {
