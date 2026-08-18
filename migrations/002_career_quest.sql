@@ -12,6 +12,18 @@
 -- touches — which is the point of writing them that way.
 -- ============================================================
 
+-- Existing rows first, or the new constraints reject them.
+--
+-- `field_badges` counted career-route encounters in the two-route version. The
+-- League and its trials did not exist then, so there is no honest value to
+-- carry across and the column is zeroed rather than reinterpreted. Reusing the
+-- storage is fine; reusing the meaning would put trials on the leaderboard
+-- that nobody played.
+--
+-- `platform_badges` does carry across: both models count badges, and the old
+-- maximum of 6 is inside the new maximum of 7.
+update scores set field_badges = 0 where field_badges <> 0;
+
 alter table scores rename column platform_badges to badges;
 alter table scores rename column field_badges to trials;
 
