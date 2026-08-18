@@ -112,17 +112,6 @@
       <h2>Sign in to play</h2>
       <p class="muted">Scores go on a public leaderboard, so you need a name.</p>
 
-      <!-- Magic link first and largest: not every visitor has GitHub. -->
-      <div class="method primary">
-        <label for="magicEmail">Email me a magic link</label>
-        <p class="method-note" id="magicNote"></p>
-        <input id="magicEmail" type="email" inputmode="email" autocomplete="email"
-               placeholder="you@example.com">
-        <button id="btnMagic" type="button" class="cta">Send magic link</button>
-      </div>
-
-      <div id="oauthDivider" class="divider"><span>or</span></div>
-
       <!-- Provider marks are inline SVG: no external requests, so they render
            on a strict CSP and offline, like everything else here. -->
       <div id="oauthRow" class="oauth">
@@ -141,6 +130,20 @@
           </svg>
           <span>Continue with GitHub</span>
         </button>
+      </div>
+
+      <div id="oauthDivider" class="divider"><span>or</span></div>
+
+      <!-- Magic link sits below the providers: Supabase's built-in email
+           service only delivers to organisation members, so for everyone else
+           this is still a test path. -->
+      <div class="method">
+        <label for="magicEmail">Email me a magic link
+          <span class="tag-test">TEST MODE</span></label>
+        <p class="method-note" id="magicNote"></p>
+        <input id="magicEmail" type="email" inputmode="email" autocomplete="email"
+               placeholder="you@example.com">
+        <button id="btnMagic" type="button" class="ghost wide">Send magic link</button>
       </div>
 
       <button id="pwToggle" type="button" class="linkish" aria-expanded="false">

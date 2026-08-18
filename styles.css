@@ -398,7 +398,11 @@ body.touch #touch { display: block; }
   border-radius: 8px;
   cursor: pointer;
 }
+/* The gold highlight marks the arrow-key selection. On a touch screen nobody
+   is using arrow keys, options are tapped directly, and a permanently
+   highlighted first option reads as a hint rather than as a cursor. */
 #dlgChoices button.sel { background: var(--gold); box-shadow: inset 0 0 0 2px var(--paper); }
+body.touch #dlgChoices button.sel { background: #e4e4d0; box-shadow: none; }
 
 /* The dialogue box owns the bottom of the screen, and would sit on top of the A
    button anyway. Tapping the box advances, and quiz options are tapped
@@ -737,12 +741,40 @@ body.public #dialogue, body.public #titleScreen { display: none; }
 /* ---------- sign-in ---------- */
 .muted { color: var(--green-lit); font-size: clamp(11px, 3vw, 13px); line-height: 1.5; }
 
+.method {
+  margin: 4px 0;
+  padding: 16px;
+  background: rgba(255, 255, 255, .03);
+  border: 2px solid #24352a;
+  border-radius: 12px;
+}
 .method.primary {
   margin: 22px 0 4px;
-  padding: 16px;
   background: rgba(62, 207, 142, .07);
-  border: 2px solid var(--brand-dark);
-  border-radius: 12px;
+  border-color: var(--brand-dark);
+}
+.tag-test {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 7px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--ink);
+  background: var(--gold);
+  border-radius: 4px;
+  vertical-align: middle;
+}
+.method .ghost.wide {
+  width: 100%;
+  min-height: 48px;
+  font-family: var(--font);
+  font-size: clamp(12px, 3.4vw, 15px);
+  font-weight: bold;
+  color: var(--green-lit);
+  background: transparent;
+  border: 2px solid var(--green-mid);
+  border-radius: 10px;
+  cursor: pointer;
 }
 .method-note {
   margin: -2px 0 8px;

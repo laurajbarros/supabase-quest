@@ -554,6 +554,28 @@ export const NPC_CONTENT = {
   }
 };
 
+// Every quiz is written with the correct answer first, which is easy to read in
+// source and terrible in play: the list would always point at the right one,
+// and on a touch screen the pre-selected highlight sits on it.
+//
+// So the options are rotated once at load. The amounts are a fixed table
+// rather than a hash of the id — a hash clustered six of eleven answers back
+// into first place, and a simple 0,1,2 cycle is a pattern an attentive player
+// would spot within three gyms. This spreads them 3/4/4 with no run.
+const ROTATIONS = [2, 0, 1, 1, 2, 0, 2, 1, 0, 2, 1];
+
+function rotate(list, by) {
+  const n = list.length;
+  const k = ((by % n) + n) % n;
+  return [...list.slice(n - k), ...list.slice(0, n - k)];
+}
+
+Object.values(NPC_CONTENT)
+  .filter(entry => entry.quiz)
+  .forEach((entry, i) => {
+    entry.quiz.options = rotate(entry.quiz.options, ROTATIONS[i % ROTATIONS.length]);
+  });
+
 // ---------------------------------------------------------------- signage
 
 export const REGION2_LOCKED_BEATS = [
