@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#0d1410">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Supabase Quest</title>
+<title>Career Quest</title>
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -17,18 +17,10 @@
        the pixel art — the thing that keeps text readable on a phone. -->
   <header id="hud">
     <div id="hudLeft">
-      <!-- The job title is the clearest signal that this is a career and not a
-           quiz, so it gets the top line to itself. -->
-      <div id="hudJob"><b>LAURA</b> — <span id="hudTitle">Full-stack Engineer</span></div>
-      <div class="track field">
-        <span class="track-label">FIELD</span>
-        <span class="dots" id="fieldDots"></span>
-        <span class="track-count" id="fieldCount">0/5</span>
-      </div>
-      <div class="track platform">
-        <span class="track-label">PLATFORM</span>
-        <span class="dots" id="platformDots"></span>
-        <span class="track-count" id="platformCount">0/6</span>
+      <div class="track badges">
+        <span class="track-label">BADGES</span>
+        <span class="dots" id="badgeDots"></span>
+        <span class="track-count" id="badgeCount">0/7</span>
       </div>
     </div>
     <div id="hudRight">
@@ -38,7 +30,7 @@
     </div>
   </header>
 
-  <div id="objective"><span id="objectiveText">Find the professor outside the lab.</span></div>
+  <div id="objective"><span id="objectiveText"></span></div>
 
   <div id="toast"></div>
 
@@ -67,7 +59,7 @@
   <!-- Title -->
   <div id="titleScreen">
     <div class="plate">
-      <h1>SUPABASE<span>QUEST</span></h1>
+      <h1>CAREER<span>QUEST</span></h1>
       <p class="tag">A Laura Barros adventure</p>
       <p id="titleHint">PRESS START</p>
       <p class="ver">v0.3 · built with Claude Code</p>
@@ -86,7 +78,7 @@
   <div id="landing" class="page">
     <div class="page-inner">
       <header class="hero">
-        <h1>SUPABASE<span>QUEST</span></h1>
+        <h1>CAREER<span>QUEST</span></h1>
         <p class="lede">I want to work at Supabase. I built this to show you why.</p>
         <button id="btnPlay" class="cta">PLAY</button>
         <div id="account"></div>

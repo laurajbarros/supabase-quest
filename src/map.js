@@ -1,24 +1,21 @@
 // The world, built procedurally from a handful of shape helpers.
 //
-// Two zones in one grid, stacked vertically:
+// Pass 1 covers Region 1 only:
 //
-//   rows  0..20   ROUTE 1 — The Field. Laura's own career.
-//   row      21   the route gate, opened by five field badges
-//   rows 22..41   ROUTE 2 — The Work I Want. Customers with problems.
-//   rows 42..47   the closing room, opened by four platform badges
+//   rows  0..20   REGION 1 — The Beginning. A small town, coffee, three gyms.
+//   row      21   the road out, opened by three badges
+//   rows 22..25   a holding area until Region 2 is built
 //
-// One grid rather than separate maps with warps: the camera, collision and
-// renderer already handle an arbitrary grid, so stacking costs nothing and
-// keeps the two routes feeling like one continuous walk.
+// Regions 2 and 3 extend this grid downward in later passes. One grid rather
+// than separate maps with warps: the camera, collision and renderer already
+// handle an arbitrary grid, so stacking costs nothing.
 
 import { SOLID, kindOf } from './tiles.js';
 
 export const MAP_W = 30;
-export const MAP_H = 48;
+export const MAP_H = 26;
 
-// Row offsets for each zone.
-const R2 = 22;   // Route 2 occupies rows 22..41 — the original 20-row map
-const OFFICE = 42;
+const GATE_ROW = 21;
 
 function mkGrid(w, h, fillName) {
   return Array.from({ length: h }, () => Array(w).fill(fillName));
@@ -35,7 +32,7 @@ function fill(g, x, y, w, h, name) {
 const set = (g, x, y, name) => { if (g[y] && g[y][x] !== undefined) g[y][x] = name; };
 
 // Two rows of roof, then walls with windows, and a door in the bottom row.
-function building(g, { x, y, w, h, roofTop, roofBottom, door, doorX }) {
+function building(g, { x, y, w, h, roofTop, roofBottom, door, doorX, banner }) {
   for (let i = 0; i < w; i++) {
     set(g, x + i, y, roofTop);
     set(g, x + i, y + 1, roofBottom);
@@ -44,190 +41,129 @@ function building(g, { x, y, w, h, roofTop, roofBottom, door, doorX }) {
     for (let i = 0; i < w; i++) {
       const gx = x + i;
       if (j === y + h - 1 && gx === doorX) { set(g, gx, j, door); continue; }
+      if (j === y + h - 1 && banner && gx === doorX + 1) { set(g, gx, j, 'gymBanner'); continue; }
       const edge = i === 0 || i === w - 1;
       set(g, gx, j, (!edge && i % 3 === 2 && j < y + h - 1) ? 'window' : 'wall');
     }
   }
 }
 
-// ---------------------------------------------------------------- gates
+// A gym is a building with a roof colour used nowhere else, a badge plate over
+// the door and a banner beside it. If a player can't tell a gym from a house at
+// a glance, the whole badge loop breaks.
+function gym(g, opts) {
+  building(g, {
+    ...opts,
+    roofTop: 'gymRoofTop',
+    roofBottom: 'gymRoofBottom',
+    door: 'gymDoor',
+    banner: true
+  });
+}
 
-// The panel of route gate that opens once five field badges are earned.
-export const ROUTE_GATE = { x: 15, y: 21 };
-// The Multigres hoarding, opened by five platform badges.
-export const GATE = { x: 24, y: R2 + 11 };
-// The closing room door, opened by four platform badges.
-export const OFFICE_DOOR = { x: 15, y: OFFICE };
+// ---------------------------------------------------------------- landmarks
 
-export const SPAWN_SIGN = { x: 16, y: 3 };
-export const END_SIGN = { x: 15, y: R2 + 12 };
+export const ROUTE_GATE = { x: 15, y: GATE_ROW };
+export const TOWN_SIGN = { x: 16, y: 18 };
+export const BUS_STOP = { x: 13, y: 7 };
+export const NEXT_SIGN = { x: 16, y: 23 };
 
-export const PLAYER_START = { x: 15, y: 3 };
+export const PLAYER_START = { x: 15, y: 19 };
 
 function build() {
   const g = mkGrid(MAP_W, MAP_H, 'grass');
 
-  // Tree border — the edge of the world, not an invisible wall.
   fill(g, 0, 0, MAP_W, 1, 'tree');
   fill(g, 0, MAP_H - 1, MAP_W, 1, 'tree');
   fill(g, 0, 0, 1, MAP_H, 'tree');
   fill(g, MAP_W - 1, 0, 1, MAP_H, 'tree');
 
-  buildRoute1(g);
-  buildRouteGate(g);
-  buildRoute2(g);
-  buildOffice(g);
-
+  buildTown(g);
+  buildGate(g);
+  buildHolding(g);
   return g;
 }
 
-// ---------------------------------------------------------------- Route 1
+function buildTown(g) {
+  // Coffee on the horizon, north-west. It's the second gym's reason to exist.
+  fill(g, 1, 1, 9, 6, 'coffee');
 
-function buildRoute1(g) {
-  // Spine: one path down the middle, spurs west and east to each workplace.
-  fill(g, 15, 2, 1, 19, 'path');
-  fill(g, 6, 8, 10, 1, 'path');    // west to the Snowflake Factory
-  fill(g, 15, 8, 8, 1, 'path');    // east to the Locked Journals
-  fill(g, 15, 12, 9, 1, 'path');   // east to the Search That Lies
-  fill(g, 6, 15, 10, 1, 'path');   // west to the Import Mines
+  // Roads. One spine down the middle, one crossbar linking the two side gyms.
+  fill(g, 15, 6, 1, 15, 'path');
+  fill(g, 4, 12, 21, 1, 'path');
+  fill(g, 4, 12, 1, 1, 'path');
 
-  // 1.1 The Snowflake Factory — a workshop of one-off machines.
-  building(g, { x: 3, y: 3, w: 7, h: 4, roofTop: 'roofTopDark', roofBottom: 'roofBottomDark', door: 'door', doorX: 6 });
-  [[3, 9], [4, 10], [8, 10], [9, 9]].forEach(([x, y]) => set(g, x, y, 'machine'));
-  [[2, 7], [10, 7]].forEach(([x, y]) => set(g, x, y, 'crate'));
+  // GYM 1 — The Admissions Gym. North, at the top of the spine.
+  gym(g, { x: 12, y: 2, w: 7, h: 4, doorX: 15 });
 
-  // 1.2 The Locked Journals — a library where each room sells its own ads.
-  building(g, { x: 20, y: 3, w: 7, h: 4, roofTop: 'roofTopAlt', roofBottom: 'roofBottomAlt', door: 'door', doorX: 23 });
-  [[20, 9], [21, 9], [25, 9], [26, 9]].forEach(([x, y]) => set(g, x, y, 'shelf'));
+  // GYM 2 — The Coffee Farm Gym. West, against the fields.
+  gym(g, { x: 2, y: 8, w: 6, h: 4, doorX: 4 });
 
-  // 1.3 The Search That Lies — a confident librarian, further along.
-  [[24, 11], [25, 11], [26, 11]].forEach(([x, y]) => set(g, x, y, 'shelf'));
-  set(g, 26, 13, 'shelf');
+  // GYM 3 — The Career Switch Gym. East.
+  gym(g, { x: 21, y: 8, w: 6, h: 4, doorX: 24 });
 
-  // 1.4 The Import Mines — carts of tangled data.
-  [[3, 14], [4, 16], [8, 16], [9, 14], [2, 17], [5, 17]].forEach(([x, y]) => set(g, x, y, 'crate'));
+  // Ordinary houses, so the gym roofs have something to be unlike.
+  building(g, { x: 20, y: 2, w: 5, h: 4, roofTop: 'roofTopAlt', roofBottom: 'roofBottomAlt', door: 'door', doorX: 22 });
+  building(g, { x: 7, y: 15, w: 5, h: 4, roofTop: 'roofTopDark', roofBottom: 'roofBottomDark', door: 'door', doorX: 9 });
+  building(g, { x: 19, y: 15, w: 5, h: 4, roofTop: 'roofTopAlt', roofBottom: 'roofBottomAlt', door: 'door', doorX: 21 });
 
-  // 1.5 The Backend Crossroads — three signposted roads, at the gate.
-  set(g, 13, 18, 'signpost');
-  set(g, 17, 18, 'signpost');
-  set(g, 17, 20, 'signpost');
+  set(g, BUS_STOP.x, BUS_STOP.y, 'sign');
+  set(g, TOWN_SIGN.x, TOWN_SIGN.y, 'sign');
 
-  // Scenery, and the sign that opens the game.
-  set(g, SPAWN_SIGN.x, SPAWN_SIGN.y, 'sign');
-  [[11, 5], [12, 11], [19, 15], [22, 17], [7, 12], [27, 6], [2, 12]]
+  // Scenery.
+  [[11, 9], [12, 14], [26, 14], [2, 14], [27, 6], [10, 11], [18, 9]]
     .forEach(([x, y]) => set(g, x, y, 'tree'));
-  [[10, 13], [20, 19], [4, 5]].forEach(([x, y]) => set(g, x, y, 'bush'));
-  [[12, 16], [24, 18], [3, 19]].forEach(([x, y]) => set(g, x, y, 'flowers'));
+  [[13, 10], [20, 13], [5, 18]].forEach(([x, y]) => set(g, x, y, 'bush'));
+  [[17, 13], [9, 13], [25, 17], [3, 16]].forEach(([x, y]) => set(g, x, y, 'flowers'));
+  [[14, 16], [22, 11]].forEach(([x, y]) => set(g, x, y, 'grassAlt'));
+  fill(g, 13, 19, 5, 1, 'plaza');
 }
 
-// The wall between the two routes. One panel opens; the rest never does.
-function buildRouteGate(g) {
-  fill(g, 1, 21, MAP_W - 2, 1, 'routeGate');
-  set(g, ROUTE_GATE.x, ROUTE_GATE.y, 'routeGate');
+// The road out. One panel opens; the rest never does.
+function buildGate(g) {
+  fill(g, 1, GATE_ROW, MAP_W - 2, 1, 'routeBlock');
+  set(g, ROUTE_GATE.x, ROUTE_GATE.y, 'routeBlock');
 }
 
-// ---------------------------------------------------------------- Route 2
-
-// The original overworld, offset down the grid. Layout unchanged — it works.
-function buildRoute2(g) {
-  const y = n => R2 + n;
-
-  // Its own borders, top and bottom. The bottom one matters: the Ceiling's
-  // hoarding used to be sealed by the edge of the world, and with the closing
-  // room added below, the corner would otherwise leak out underneath it.
-  fill(g, 1, y(0), MAP_W - 2, 1, 'tree');
-  fill(g, 1, y(19), MAP_W - 2, 1, 'tree');
-  set(g, 15, y(0), 'path');
-  fill(g, 15, y(0), 1, 9, 'path');   // down to the upper crossbar
-
-  fill(g, 6, y(5), 1, 7, 'path');
-  fill(g, 20, y(5), 1, 7, 'path');
-  fill(g, 6, y(8), 15, 1, 'path');
-  fill(g, 3, y(11), 21, 1, 'path');
-  fill(g, 3, y(12), 1, 6, 'path');
-  fill(g, 4, y(17), 5, 1, 'path');
-
-  building(g, { x: 4, y: y(1), w: 6, h: 4, roofTop: 'roofTop', roofBottom: 'roofBottom', door: 'doorLab', doorX: 6 });
-  building(g, { x: 17, y: y(1), w: 6, h: 4, roofTop: 'roofTopAlt', roofBottom: 'roofBottomAlt', door: 'door', doorX: 20 });
-  building(g, { x: 5, y: y(13), w: 6, h: 4, roofTop: 'roofTopDark', roofBottom: 'roofBottomDark', door: 'door', doorX: 8 });
-
-  set(g, 4, y(10), 'pedestal');
-  set(g, 13, y(6), 'server');
-  set(g, 14, y(6), 'server');
-
-  // The Ceiling: hoarding along the west and north edges of the corner.
-  fill(g, 24, y(6), 1, 13, 'fenceWork');
-  fill(g, 24, y(6), 5, 1, 'fenceWork');
-  set(g, GATE.x, GATE.y, 'fenceWork');
-
-  [[2, 9], [2, 12], [8, 10], [11, 13], [16, 14], [21, 15], [12, 3], [26, 3], [9, 6]]
-    .forEach(([x, n]) => set(g, x, y(n), 'tree'));
-  [[2, 10], [15, 13], [22, 9], [10, 4]].forEach(([x, n]) => set(g, x, y(n), 'bush'));
-  [[2, 16], [5, 10], [18, 13], [22, 17], [11, 9]].forEach(([x, n]) => set(g, x, y(n), 'flowers'));
-  [[8, 12], [17, 9], [26, 16]].forEach(([x, n]) => set(g, x, y(n), 'grassAlt'));
-
-  fill(g, 19, y(5), 3, 1, 'plaza');
-  set(g, END_SIGN.x, END_SIGN.y, 'sign');
-
-  fill(g, 1, y(3), 3, 5, 'water');
-
-  // The way down to the closing room, through Route 2's bottom border.
-  fill(g, 15, y(18), 1, 2, 'path');
-}
-
-// ---------------------------------------------------------------- closing
-
-// A walled courtyard, one desk, one person. Nothing else — the room is meant to
-// leave a reader curious, not to answer everything.
-function buildOffice(g) {
-  // Rows 42..46 — row 47 is the tree border at the edge of the world.
-  fill(g, 1, OFFICE, MAP_W - 2, 5, 'wall');
-  fill(g, 2, OFFICE + 1, MAP_W - 4, 3, 'floor');
-  set(g, OFFICE_DOOR.x, OFFICE_DOOR.y, 'doorLocked');
-  set(g, 14, OFFICE + 2, 'desk');
+// Everything past the gate until Region 2 exists.
+function buildHolding(g) {
+  fill(g, 15, GATE_ROW + 1, 1, 3, 'path');
+  set(g, NEXT_SIGN.x, NEXT_SIGN.y, 'sign');
 }
 
 // ---------------------------------------------------------------- NPCs
+//
+// Gym leaders stand in their doorway — there are no interiors, and a leader in
+// the door is unmistakably "the person you came here for".
 
-// Route 1 — the field. Five encounters, plus a hidden one.
-// Route 2 — the platform. Six customers.
 export const NPCS = [
-  // Route 1
-  { id: 'snowflake',  route: 1, char: 'foreman',   x: 6,  y: 9,  dir: 'down',  name: 'Foreman' },
-  { id: 'journals',   route: 1, char: 'adops',     x: 23, y: 8,  dir: 'down',  name: 'Ad Ops' },
-  { id: 'search',     route: 1, char: 'librarian', x: 24, y: 12, dir: 'down',  name: 'Librarian' },
-  { id: 'imports',    route: 1, char: 'miner',     x: 6,  y: 16, dir: 'up',    name: 'Migrations' },
-  { id: 'crossroads', route: 1, char: 'crossroads', x: 16, y: 19, dir: 'left', name: 'The Crossroads' },
-  { id: 'hiddenField', route: 1, char: 'hidden',   x: 2,  y: 19, dir: 'right', name: '???', secret: true },
+  // Gyms
+  { id: 'determination', char: 'curve',         x: 15, y: 5,  dir: 'down', name: 'The Curve' },
+  { id: 'entrepreneur',  char: 'redNumber',     x: 4,  y: 11, dir: 'down', name: 'The Red Number' },
+  { id: 'bridge',        char: 'learningCurve', x: 24, y: 11, dir: 'down', name: 'The Learning Curve' },
 
-  // Route 2
-  { id: 'migration',  route: 2, char: 'architect', x: 7,  y: R2 + 5,  dir: 'down', name: 'Enterprise Architect' },
-  { id: 'leak',       route: 2, char: 'founder',   x: 20, y: R2 + 4,  dir: 'down', name: 'Founder' },
-  { id: 'invoice',    route: 2, char: 'cfo',       x: 4,  y: R2 + 10, dir: 'down', name: 'CFO' },
-  { id: 'firehose',   route: 2, char: 'pm',        x: 13, y: R2 + 7,  dir: 'down', name: 'PM' },
-  { id: 'dashboard',  route: 2, char: 'engineer',  x: 8,  y: R2 + 17, dir: 'down', name: 'Engineer' },
-  { id: 'ceiling',    route: 2, char: 'cto',       x: 26, y: R2 + 11, dir: 'left', name: 'CTO' },
+  // Flavour
+  { id: 'kid',        char: 'kid',        x: 14, y: 7,  dir: 'right', name: 'Kid' },
+  { id: 'farmWorker', char: 'farmWorker', x: 7,  y: 7,  dir: 'down',  name: 'Farm Worker' },
+  { id: 'oldMan',     char: 'oldMan',     x: 6,  y: 13, dir: 'up',    name: 'Old Man' },
+  { id: 'girlLaptop', char: 'girlLaptop', x: 22, y: 13, dir: 'up',    name: 'Girl with a Laptop' },
 
-  // The closing room
-  { id: 'closing',    route: 3, char: 'laura',     x: 15, y: OFFICE + 2, dir: 'up', name: 'Laura' }
+  // The Mentor, beside where you wake up. The Rival, at the town entrance.
+  { id: 'mentor', char: 'mentor', x: 14, y: 19, dir: 'right', name: 'The Mentor' },
+  { id: 'rival1', char: 'rival',  x: 17, y: 20, dir: 'left',  name: 'Rival' }
 ];
 
-export const FIELD_IDS = NPCS.filter(n => n.route === 1 && !n.secret).map(n => n.id);
-export const PLATFORM_IDS = NPCS.filter(n => n.route === 2).map(n => n.id);
+export const GYM_IDS = ['determination', 'entrepreneur', 'bridge'];
 
 export const grid = build();
 
 export let collision = [];
 
-export function rebuildCollision({ routeOpen = false, gateOpen = false, officeOpen = false } = {}) {
-  if (routeOpen) grid[ROUTE_GATE.y][ROUTE_GATE.x] = 'gateOpen';
-  if (gateOpen) grid[GATE.y][GATE.x] = 'gateOpen';
-  if (officeOpen) grid[OFFICE_DOOR.y][OFFICE_DOOR.x] = 'door';
+export function rebuildCollision({ region2Open = false } = {}) {
+  if (region2Open) grid[ROUTE_GATE.y][ROUTE_GATE.x] = 'gateOpen';
 
   collision = grid.map((row, y) => row.map((name, x) => {
-    if (routeOpen && x === ROUTE_GATE.x && y === ROUTE_GATE.y) return false;
-    if (gateOpen && x === GATE.x && y === GATE.y) return false;
-    if (officeOpen && x === OFFICE_DOOR.x && y === OFFICE_DOOR.y) return false;
+    if (region2Open && x === ROUTE_GATE.x && y === ROUTE_GATE.y) return false;
     return SOLID.has(name);
   }));
   for (const npc of NPCS) collision[npc.y][npc.x] = true;
@@ -276,41 +212,31 @@ export function reachabilityReport(gates = {}) {
 
   const reachable = new Set();
   for (const n of NPCS) if (adjacent(n.x, n.y)) reachable.add(n.id);
-  if (adjacent(END_SIGN.x, END_SIGN.y)) reachable.add('end-sign');
-  if (adjacent(SPAWN_SIGN.x, SPAWN_SIGN.y)) reachable.add('spawn-sign');
+  for (const [name, s] of [['town-sign', TOWN_SIGN], ['bus-stop', BUS_STOP], ['next-sign', NEXT_SIGN]]) {
+    if (adjacent(s.x, s.y)) reachable.add(name);
+  }
   return reachable;
 }
 
 rebuildCollision();
 
-// Gated content is meant to be unreachable until it opens, so each stage is
-// checked: what must be reachable now, and what must not be yet.
 {
   const must = (set, ids, stage) => {
     const missing = ids.filter(id => !set.has(id));
     if (missing.length) throw new Error(`Map (${stage}): unreachable — ${missing.join(', ')}`);
   };
-  const mustNot = (set, ids, stage) => {
-    const leaked = ids.filter(id => set.has(id));
-    if (leaked.length) throw new Error(`Map (${stage}): reachable too early — ${leaked.join(', ')}`);
-  };
 
   const closed = reachabilityReport({});
-  must(closed, [...FIELD_IDS, 'hiddenField', 'spawn-sign'], 'route 1');
-  mustNot(closed, [...PLATFORM_IDS, 'closing', 'end-sign'], 'route 1');
+  must(closed, NPCS.map(n => n.id).concat(['town-sign', 'bus-stop']), 'region 1');
+  if (closed.has('next-sign')) {
+    throw new Error('Map: the road out is open before three badges');
+  }
 
-  const route = reachabilityReport({ routeOpen: true });
-  must(route, PLATFORM_IDS.filter(id => id !== 'ceiling'), 'route 2');
-  must(route, ['end-sign'], 'route 2');
-  mustNot(route, ['ceiling', 'closing'], 'route 2');
-
-  const open = reachabilityReport({ routeOpen: true, gateOpen: true, officeOpen: true });
-  must(open, NPCS.map(n => n.id).concat(['end-sign', 'spawn-sign']), 'fully open');
+  const open = reachabilityReport({ region2Open: true });
+  must(open, ['next-sign'], 'gate open');
 
   // Reset to the closed state for the actual game.
-  grid[ROUTE_GATE.y][ROUTE_GATE.x] = 'routeGate';
-  grid[GATE.y][GATE.x] = 'fenceWork';
-  grid[OFFICE_DOOR.y][OFFICE_DOOR.x] = 'doorLocked';
+  grid[ROUTE_GATE.y][ROUTE_GATE.x] = 'routeBlock';
   rebuildCollision({});
 }
 

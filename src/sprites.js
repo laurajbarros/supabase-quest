@@ -101,110 +101,57 @@ function makeHuman(o) {
   return frames;
 }
 
-// A floating key on a pedestal — the service_role key isn't a person, and it
-// shouldn't walk or look friendly.
-function makeKey() {
-  const build = bob => {
-    const p = new Painter(TS, TS);
-    const y = 4 + bob;
-    p.circle(6, y + 3, 3, C.gold);
-    p.circle(6, y + 3, 1, C.night);
-    p.rect(8, y + 2, 6, 2, C.gold);
-    p.rect(12, y + 4, 2, 2, C.gold);
-    p.rect(10, y + 4, 1, 2, C.gold);
-    // A warning glint, so it reads as hazardous rather than collectible.
-    p.set(13, y, C.danger).set(4, y + 6, C.danger);
-    return p;
-  };
-  const frames = [build(0), build(-1), build(1)];
-  return { down: frames, up: frames, left: frames, right: frames };
-}
-
-// Multigres: a half-built machine behind the hoarding.
-function makeRig() {
-  const build = blink => {
-    const p = new Painter(TS, TS);
-    p.rect(3, 3, 10, 9, C.metal);
-    p.rect(4, 4, 8, 3, C.night);
-    p.set(6, 5, blink ? C.brand : C.metalDark);
-    p.set(9, 5, blink ? C.brand : C.metalDark);
-    p.rect(4, 8, 8, 3, C.metalLight);
-    for (let y = 8; y < 11; y++) p.set(11, y, y === 9 ? C.gold : C.metalDark);
-    p.rect(2, 12, 12, 2, C.metalDark);
-    p.rect(3, 14, 3, 2, C.night).rect(10, 14, 3, 2, C.night);
-    p.rect(6, 0, 4, 3, C.gold);          // hard hat
-    p.hline(5, 3, 6, C.goldDark);
-    return p;
-  };
-  const frames = [build(true), build(false), build(true)];
-  return { down: frames, up: frames, left: frames, right: frames };
-}
-
-// The cast. Colours do the characterisation: the professor is grey and
-// bespectacled in a lab coat, the bouncer is broad and dark, Reggie is loud.
+// The cast. Colours do the characterisation — one parameterised function, one
+// entry per person.
 const CAST = {
-  // The player is Laura, not a generic sprite — the game is her career.
+  // The player is Laura.
   player: () => makeHuman({
     skin: SKIN.mid, hair: '#3b2416', longHair: true,
     shirt: C.brand, pants: '#39405c', shoes: '#242424'
   }),
-  // The same figure, seated at the desk in the closing room.
-  laura: () => makeHuman({
-    skin: SKIN.mid, hair: '#3b2416', longHair: true,
-    shirt: C.brand, pants: '#39405c', shoes: '#242424'
+
+  // The Mentor. White hair, lab coat — the professor archetype, on purpose.
+  mentor: () => makeHuman({
+    skin: SKIN.light, hair: HAIR.white, shirt: '#4a6fa5', pants: '#3c3c44',
+    shoes: '#282828', coat: C.paper, glasses: C.ink, beard: HAIR.white
   }),
 
-  // ---- Route 1: the field -------------------------------------------------
-  foreman: () => makeHuman({
-    skin: SKIN.light, hair: HAIR.grey, shirt: '#7a6a52', pants: '#4a4238',
-    shoes: '#2e2820', hat: C.amber, beard: HAIR.grey
+  // The Rival. Same silhouette in every region so he's recognised instantly.
+  rival: () => makeHuman({
+    skin: SKIN.light, hair: '#c8501e', shirt: '#7a2f4a', pants: '#2c2c38',
+    shoes: '#1a1a20', glasses: '#101010'
   }),
-  adops: () => makeHuman({
+
+  // ---- Region 1 gym leaders ----------------------------------------------
+  curve: () => makeHuman({
     skin: SKIN.deep, hair: HAIR.black, longHair: true,
-    shirt: '#8a4a7a', pants: '#3a2c3a', shoes: '#241c24', badge: C.gold
+    shirt: '#4a4a7a', pants: '#2e2e46', shoes: '#1c1c24', glasses: C.ink
   }),
-  librarian: () => makeHuman({
-    skin: SKIN.light, hair: HAIR.grey, longHair: true,
-    shirt: '#4a6fa5', pants: '#33384a', shoes: '#242424', glasses: C.ink
+  redNumber: () => makeHuman({
+    skin: SKIN.mid, hair: HAIR.grey, shirt: '#8a4a2a', pants: '#4a3a2a',
+    shoes: '#2a1e14', hat: '#c9a06a'
   }),
-  miner: () => makeHuman({
-    skin: SKIN.darker, hair: HAIR.black, shirt: '#6a5a3a', pants: '#40382a',
-    shoes: '#221e18', hat: C.amber
-  }),
-  crossroads: () => makeHuman({
-    skin: SKIN.mid, hair: HAIR.brown, shirt: '#3a5a4a', pants: '#2c3a34',
-    shoes: '#1c2420', coat: '#7a6a52', hat: '#5a4a38'
+  learningCurve: () => makeHuman({
+    skin: SKIN.light, hair: '#6b4423', shirt: '#2f7a5a', pants: '#33384a',
+    shoes: '#242424'
   }),
 
-  // ---- Route 2: the platform ----------------------------------------------
-  architect: () => makeHuman({
-    skin: SKIN.light, hair: HAIR.grey, shirt: '#4a6fa5', pants: '#3c3c44',
-    shoes: '#282828', coat: C.paper, glasses: C.ink, beard: HAIR.grey
+  // ---- Region 1 flavour ---------------------------------------------------
+  kid: () => makeHuman({
+    skin: SKIN.mid, hair: HAIR.brown, shirt: '#d8b038', pants: '#3a5a8a', shoes: '#c04030'
   }),
-  founder: () => makeHuman({
-    skin: SKIN.mid, hair: HAIR.black, shirt: '#2b3a4a', pants: '#20242c',
-    shoes: '#181818', badge: C.danger
+  farmWorker: () => makeHuman({
+    skin: SKIN.darker, hair: HAIR.black, shirt: '#6a8a4a', pants: '#4a4238',
+    shoes: '#2e2820', hat: '#c9a06a'
   }),
-  cfo: () => makeHuman({
-    skin: SKIN.light, hair: HAIR.grey, shirt: '#2e2e38', pants: '#24242c',
-    shoes: '#141414', coat: '#3a3a46', glasses: C.ink
+  oldMan: () => makeHuman({
+    skin: SKIN.light, hair: HAIR.white, shirt: '#8a8a7a', pants: '#4a4a44',
+    shoes: '#2a2a24', beard: HAIR.white
   }),
-  pm: () => makeHuman({
-    skin: SKIN.light, hair: '#c8501e', shirt: C.gold, pants: '#4a3a2a', shoes: '#8a3a1a'
-  }),
-  engineer: () => makeHuman({
-    skin: SKIN.deep, hair: HAIR.black, shirt: '#3a4a6a', pants: '#2a3040',
-    shoes: '#1a1a20', glasses: C.ink
-  }),
-  cto: () => makeHuman({
-    skin: SKIN.darker, hair: HAIR.black, shirt: '#1e1e26', pants: '#1a1a20',
-    shoes: '#101010', coat: '#2a2a34'
-  }),
-
-  // Kept from the original cast: still used as scenery-scale props.
-  servicekey: () => makeKey(),
-  multigres:  () => makeRig(),
-  hidden:     () => makeHuman({ skin: SKIN.mid, hair: HAIR.black, shirt: '#4a3a5a', pants: '#2e2438', shoes: '#1c1c1c', hat: '#3a2e48' })
+  girlLaptop: () => makeHuman({
+    skin: SKIN.deep, hair: HAIR.black, longHair: true,
+    shirt: '#7a4a8a', pants: '#2e2438', shoes: '#1c1c1c', glasses: C.ink
+  })
 };
 
 let baked = null;

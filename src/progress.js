@@ -1,28 +1,30 @@
-// Run state: two badge tracks, a score, a job title, and what's been seen.
+// Run state: badges, League trials, score, and what's been seen.
 //
 // Persisted after every change, so an interrupted run on a phone (a call, a
 // locked screen, a closed tab) survives.
 
 import {
-  FIELD_ORDER, PLATFORM_ORDER, NPC_CONTENT, TITLES, PROMOTIONS,
-  SCORE_CORRECT, SCORE_WRONG_FIELD, SCORE_WRONG_PLATFORM
+  BADGE_ORDER, TRIAL_ORDER, NPC_CONTENT,
+  SCORE_FIRST_TRY, SCORE_AFTER_RETRY
 } from './content.js';
 
-const KEY = 'sbq_progress_v2';
+// v3: the two-track field/platform model is gone, replaced by one badge list.
+const KEY = 'sbq_progress_v3';
 
-export const ROUTE_GATE_REQUIREMENT = 5;    // field badges to reach Route 2
-export const CEILING_REQUIREMENT = 5;       // platform badges to open the hoarding
-export const OFFICE_REQUIREMENT = 4;        // platform badges to open the closing room
+export const REGION2_REQUIREMENT = 3;   // badges to open RebelMouse
+export const LEAGUE_REQUIREMENT = 7;    // badges to open the Supabase League
 
 const blank = () => ({
-  field: [],
-  platform: [],
+  badges: [],
+  trials: [],
   score: 0,
-  title: TITLES.start,
+  // How many challenges were cleared without a wrong answer. Shown on the
+  // leaderboard, because with retries free everyone finishes at 7/7 and the
+  // board needs something to actually compare.
+  firstTry: 0,
   seen: {},
-  routeOpen: false,
-  gateOpen: false,
-  officeOpen: false
+  region2Open: false,
+  leagueOpen: false
 });
 
 export let run = blank();
@@ -32,10 +34,10 @@ export function load() {
     const raw = localStorage.getItem(KEY);
     if (raw) {
       run = { ...blank(), ...JSON.parse(raw) };
-      // Drop anything that isn't a real badge id — a stale save from an older
-      // build shouldn't be able to push either count past its maximum.
-      run.field = (run.field || []).filter(id => FIELD_ORDER.includes(id));
-      run.platform = (run.platform || []).filter(id => PLATFORM_ORDER.includes(id));
+      // Drop anything that isn't a real id — a stale save from an older build
+      // shouldn't be able to push a count past its maximum.
+      run.badges = (run.badges || []).filter(id => BADGE_ORDER.includes(id));
+      run.trials = (run.trials || []).filter(id => TRIAL_ORDER.includes(id));
     }
   } catch {
     run = blank();
@@ -57,46 +59,39 @@ export function reset() {
   save();
 }
 
-export const hasBadge = id => run.field.includes(id) || run.platform.includes(id);
-export const fieldCount = () => run.field.length;
-export const platformCount = () => run.platform.length;
-export const fieldComplete = () => run.field.length >= FIELD_ORDER.length;
-export const platformComplete = () => run.platform.length >= PLATFORM_ORDER.length;
-export const isComplete = () => fieldComplete() && platformComplete();
+export const hasBadge = id => run.badges.includes(id);
+export const hasTrial = id => run.trials.includes(id);
+export const badgeCount = () => run.badges.length;
+export const trialCount = () => run.trials.length;
+export const allBadges = () => run.badges.length >= BADGE_ORDER.length;
+export const allTrials = () => run.trials.length >= TRIAL_ORDER.length;
 
-// Returns what changed, so the caller can stage the toasts and animations.
-export function award(id, correct) {
-  const content = NPC_CONTENT[id];
-  if (!content || hasBadge(id)) return { badge: false };
+// `firstTry` is whether they got it without a wrong answer. A wrong answer
+// costs points, never progress — the gym still hands over the badge.
+export function award(id, firstTry) {
+  if (hasBadge(id)) return { badge: false };
 
-  const isField = content.route === 1;
-  (isField ? run.field : run.platform).push(id);
+  run.badges.push(id);
+  run.score += firstTry ? SCORE_FIRST_TRY : SCORE_AFTER_RETRY;
+  if (firstTry) run.firstTry++;
 
-  const wrongValue = isField ? SCORE_WRONG_FIELD : SCORE_WRONG_PLATFORM;
-  run.score += correct ? SCORE_CORRECT : wrongValue;
+  const region2JustOpened = !run.region2Open && run.badges.length >= REGION2_REQUIREMENT;
+  if (region2JustOpened) run.region2Open = true;
 
-  // Titles only move on Route 1: the field is where the career happened.
-  const promotion = PROMOTIONS[id] || null;
-  if (promotion) run.title = promotion;
-
-  const routeJustOpened = !run.routeOpen && run.field.length >= ROUTE_GATE_REQUIREMENT;
-  if (routeJustOpened) run.routeOpen = true;
-
-  const gateJustOpened = !run.gateOpen && run.platform.length >= CEILING_REQUIREMENT;
-  if (gateJustOpened) run.gateOpen = true;
-
-  const officeJustOpened = !run.officeOpen && run.platform.length >= OFFICE_REQUIREMENT;
-  if (officeJustOpened) run.officeOpen = true;
+  const leagueJustOpened = !run.leagueOpen && run.badges.length >= LEAGUE_REQUIREMENT;
+  if (leagueJustOpened) run.leagueOpen = true;
 
   save();
-  return { badge: true, isField, promotion, routeJustOpened, gateJustOpened, officeJustOpened };
+  return { badge: true, region2JustOpened, leagueJustOpened };
 }
 
-export function setTitle(title) {
-  if (run.title === title) return false;
-  run.title = title;
+export function awardTrial(id, firstTry) {
+  if (hasTrial(id)) return { trial: false };
+  run.trials.push(id);
+  run.score += firstTry ? SCORE_FIRST_TRY : SCORE_AFTER_RETRY;
+  if (firstTry) run.firstTry++;
   save();
-  return true;
+  return { trial: true };
 }
 
 export function markSeen(id) {
@@ -106,19 +101,9 @@ export function markSeen(id) {
 
 export const hasSeen = id => !!run.seen[id];
 
-// The next unvisited stop, in narrative order. Route 2 only starts suggesting
-// once the gate is open, and the Ceiling stays quiet while it's still fenced —
-// pointing at a locked gate is a worse hint than none.
+// The next unearned badge, in order. Drives the objective chip.
 export function nextTarget() {
-  const field = FIELD_ORDER.find(id => !hasBadge(id));
-  if (field) return field;
-  if (!run.routeOpen) return null;
-  return PLATFORM_ORDER.find(id => {
-    if (hasBadge(id)) return false;
-    if (id === 'ceiling' && !run.gateOpen) return false;
-    return true;
-  }) || null;
+  return BADGE_ORDER.find(id => !hasBadge(id)) || null;
 }
 
-export const badgeLabels = () =>
-  [...run.field, ...run.platform].map(id => NPC_CONTENT[id].badge);
+export const badgeLabels = () => run.badges.map(id => NPC_CONTENT[id].badge);

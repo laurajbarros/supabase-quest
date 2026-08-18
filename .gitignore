@@ -1,3 +1,6 @@
 .DS_Store
 node_modules/
 *.log
+
+# Local planning notes, not part of the shipped site
+PLAN.md

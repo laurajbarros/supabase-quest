@@ -1,5 +1,5 @@
 -- ============================================================
--- Supabase Quest — schema
+-- Career Quest — schema
 -- Run once in Dashboard -> SQL Editor.
 --
 -- The RLS policies are the part of this project worth reading closely. The
@@ -17,14 +17,17 @@ create table if not exists profiles (
 create table if not exists scores (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id) on delete cascade,
-  -- 1100 is the maximum a legitimate run can produce: five field encounters
-  -- and six platform encounters, 100 each. The score is submitted by the
-  -- client and is therefore forgeable; this constraint caps the blast radius.
-  -- See the README for why that tradeoff was made deliberately.
+  -- 1100 is the maximum a legitimate run can produce: 7 gym badges and 4
+  -- League trials, 100 each. The score is submitted by the client and is
+  -- therefore forgeable; this constraint caps the blast radius. See the README
+  -- for why that tradeoff was made deliberately.
   score int not null check (score >= 0 and score <= 1100),
-  -- Two tracks: Route 1 is Laura's career, Route 2 is the platform.
-  field_badges int not null default 0 check (field_badges >= 0 and field_badges <= 5),
-  platform_badges int not null default 0 check (platform_badges >= 0 and platform_badges <= 6),
+  badges int not null default 0 check (badges >= 0 and badges <= 7),
+  trials int not null default 0 check (trials >= 0 and trials <= 4),
+  -- Challenges cleared without a wrong answer. A wrong answer costs points but
+  -- never blocks, so without this every finisher would sit at 7/7 and the
+  -- leaderboard would have nothing to compare.
+  first_try int not null default 0 check (first_try >= 0 and first_try <= 11),
   completed_at timestamptz default now()
 );
 
@@ -105,10 +108,11 @@ with (security_invoker = true) as
   select
     s.id,
     s.score,
-    s.field_badges,
-    s.platform_badges,
+    s.badges,
+    s.trials,
+    s.first_try,
     s.completed_at,
     p.display_name
   from scores s
   join profiles p on p.id = s.user_id
-  order by s.score desc, s.completed_at asc;
+  order by s.score desc, s.first_try desc, s.completed_at asc;

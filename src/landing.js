@@ -232,8 +232,8 @@ export async function refreshPublic() {
       <li>
         <span class="rank">${i + 1}</span>
         <span class="who">${escapeHtml(s.display_name)}</span>
-        <span class="badges" title="${s.field_badges} field, ${s.platform_badges} platform"
-              >${'\u2605'.repeat(s.field_badges || 0)}${'\u2606'.repeat(s.platform_badges || 0)}</span>
+        <span class="badges" title="${s.badges} badges, ${s.first_try || 0} first try"
+              >${'\u25c9'.repeat(s.badges || 0)}</span>
         <span class="pts">${s.score}</span>
       </li>`).join('');
   }

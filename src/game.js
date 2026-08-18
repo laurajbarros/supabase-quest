@@ -11,12 +11,12 @@ import * as progress from './progress.js';
 import { setMonochrome, isMonochrome, TS } from './painter.js';
 import { player, update as updatePlayer, facingTile, resetPlayer } from './player.js';
 import {
-  NPCS, END_SIGN, SPAWN_SIGN, GATE, ROUTE_GATE, OFFICE_DOOR, npcAt, rebuildCollision, grid
+  NPCS, GYM_IDS, ROUTE_GATE, TOWN_SIGN, BUS_STOP, NEXT_SIGN,
+  npcAt, rebuildCollision, grid
 } from './map.js';
 import {
-  NPC_CONTENT, FIELD_ORDER, PLATFORM_ORDER, NUDGES, TITLES,
-  END_SIGN_BEATS, SPAWN_SIGN_BEATS, BRIDGE_BEATS, INTRO_BEATS,
-  GATE_LOCKED_BEATS, ROUTE_LOCKED_BEATS, OFFICE_LOCKED_BEATS
+  NPC_CONTENT, BADGE_ORDER, MENTOR_BEATS,
+  REGION1_CLEAR_BEATS, REGION2_LOCKED_BEATS, NEXT_BUILD_BEATS
 } from './content.js';
 import { sfx, isMuted, setMuted } from './audio.js';
 import * as landing from './landing.js';
@@ -39,14 +39,21 @@ function entities() {
   ];
 }
 
-// Everything you can walk up to and press A on. Derived from the same rule the
-// interaction uses, so a marker can never promise something the game doesn't
-// do. Anything already finished loses its marker.
+// Gyms keep their marker until their badge is earned — they're the thing the
+// player is actually looking for. Flavour NPCs lose theirs once spoken to, so
+// a cleared area stops competing for attention.
 function interactables() {
-  const out = NPCS
-    .filter(n => !progress.hasBadge(n.id) && !(n.id === 'closing' && !progress.run.officeOpen))
-    .map(n => ({ x: n.x, y: n.y }));
-  out.push({ x: END_SIGN.x, y: END_SIGN.y }, { x: SPAWN_SIGN.x, y: SPAWN_SIGN.y });
+  const out = [];
+  for (const n of NPCS) {
+    const content = NPC_CONTENT[n.id];
+    if (!content) continue;
+    if (content.gym) {
+      if (!progress.hasBadge(n.id)) out.push({ x: n.x, y: n.y });
+    } else if (!progress.hasSeen(n.id)) {
+      out.push({ x: n.x, y: n.y });
+    }
+  }
+  out.push({ x: TOWN_SIGN.x, y: TOWN_SIGN.y }, { x: BUS_STOP.x, y: BUS_STOP.y });
   return out;
 }
 
@@ -56,16 +63,18 @@ function targetInFront() {
   const f = facingTile();
   const npc = npcAt(f.x, f.y);
   if (npc) return { kind: 'npc', npc };
-  if (f.x === END_SIGN.x && f.y === END_SIGN.y) return { kind: 'sign', beats: END_SIGN_BEATS, name: 'SIGN' };
-  if (f.x === SPAWN_SIGN.x && f.y === SPAWN_SIGN.y) return { kind: 'sign', beats: SPAWN_SIGN_BEATS, name: 'SIGN' };
-  if (f.x === ROUTE_GATE.x && f.y === ROUTE_GATE.y && !progress.run.routeOpen) {
-    return { kind: 'sign', beats: ROUTE_LOCKED_BEATS, name: 'GATE' };
+
+  if (f.x === TOWN_SIGN.x && f.y === TOWN_SIGN.y) {
+    return { kind: 'sign', name: 'SIGN', beats: ['THE BEGINNING', 'Population: enough.'] };
   }
-  if (f.x === GATE.x && f.y === GATE.y && !progress.run.gateOpen) {
-    return { kind: 'sign', beats: GATE_LOCKED_BEATS, name: 'NOTICE' };
+  if (f.x === BUS_STOP.x && f.y === BUS_STOP.y) {
+    return { kind: 'sign', name: 'BUS STOP', beats: ['BUS STOP', 'Next bus: eventually.'] };
   }
-  if (f.x === OFFICE_DOOR.x && f.y === OFFICE_DOOR.y && !progress.run.officeOpen) {
-    return { kind: 'sign', beats: OFFICE_LOCKED_BEATS, name: 'DOOR' };
+  if (f.x === NEXT_SIGN.x && f.y === NEXT_SIGN.y) {
+    return { kind: 'sign', name: 'SIGN', beats: NEXT_BUILD_BEATS };
+  }
+  if (f.x === ROUTE_GATE.x && f.y === ROUTE_GATE.y && !progress.run.region2Open) {
+    return { kind: 'sign', name: 'ROAD', beats: REGION2_LOCKED_BEATS };
   }
   return null;
 }
@@ -83,160 +92,97 @@ function interact() {
   const content = NPC_CONTENT[npc.id];
   if (!content) return;
 
-  if (progress.hasBadge(npc.id)) {
-    openTalk([`${content.badge} — done. Go on, then.`], { name: content.name });
+  // The Mentor repeats the briefing on demand — the player may have tapped
+  // through it, and it's the only place the badge loop is stated outright.
+  if (npc.id === 'mentor') {
+    openTalk(MENTOR_BEATS, { name: content.name, speaker: 'mentor' });
     return;
   }
 
-  // No quiz: the hidden NPC and the closing room are told, not tested.
+  // A cleared gym gets its closing line, so returning isn't a dead end.
+  if (content.gym && progress.hasBadge(npc.id)) {
+    openTalk([content.postWin], { name: content.name });
+    return;
+  }
+
+  // Flavour: one line, no question, no badge.
   if (!content.quiz) {
     openTalk(content.beats, {
       name: content.name,
-      onDone: () => finishNpc(npc, { correct: false })
+      speaker: content.rival ? 'rival' : 'npc',
+      onDone: () => { progress.markSeen(npc.id); }
     });
     return;
   }
 
-  const isField = content.route === 1;
   openTalk(content.beats, {
     name: content.name,
-    quiz: {
-      ...content.quiz,
-      // Route 1 asks for judgment, so a wrong answer is met with "that's what
-      // most people try" and the story of what happened when we did. Route 2
-      // asks about facts, so it gets the fact. Both then hear the reveal.
-      resolve: (correct, answer) => {
-        const opening = correct
-          ? ['✅ That\'s the call.']
-          : isField
-            ? ['That\'s what most people try.', 'Here\'s what happened when we did.']
-            : [`Not quite — ${answer}.`];
-        return [...opening, ...(content.reveal || []), ...(content.beyond || [])];
-      }
-    },
-    onDone: result => finishNpc(npc, result)
+    quiz: content.quiz,
+    onDone: result => finishGym(npc, result)
   });
 }
 
 function openTalk(beats, opts = {}) {
   mode = 'dialog';
-  // Scenes can rewrite the world between lines — a pile of crates disappearing
-  // as the tooling that removed it is described.
+  // Scenes can rewrite the world between lines.
   dialogue.open(beats, {
     world: changes => {
       for (const [x, y, tile] of changes) {
         if (grid[y] && grid[y][x] !== undefined) grid[y][x] = tile;
       }
-      const { routeOpen, gateOpen, officeOpen } = progress.run;
-      rebuildCollision({ routeOpen, gateOpen, officeOpen });
+      rebuildCollision({ region2Open: progress.run.region2Open });
       render.bakeMap();
     },
     ...opts
   });
 }
 
-function finishNpc(npc, { correct }) {
+function finishGym(npc, { firstTry }) {
   const content = NPC_CONTENT[npc.id];
-
-  // The hidden NPC is a find, not a stop on the tour: no badge, no points.
-  if (content.secret) {
-    progress.markSeen(npc.id);
-    screens.toast('You found something that isn\'t on the map.');
-    return;
-  }
-
-  // The closing room ends the run.
-  if (npc.id === 'closing') {
-    progress.markSeen(npc.id);
-    setTimeout(showResults, 600);
-    return;
-  }
-
-  const result = progress.award(npc.id, correct);
+  const result = progress.award(npc.id, firstTry);
   if (!result.badge) return;
 
   sfx.badge();
-  const points = correct ? 100 : (result.isField ? 50 : 25);
-  screens.toast(`Badge earned: ${content.badge} · +${points}`);
+  screens.toast(`${content.badge} BADGE · +${firstTry ? 100 : 50}`, 3000);
   updateHud();
 
-  if (result.promotion) {
+  if (result.region2JustOpened) {
+    rebuildCollision({ region2Open: true });
+    render.bakeMap();
     setTimeout(() => {
       sfx.unlock();
-      flashPromotion();
-      screens.toast(`PROMOTED — ${result.promotion}`, 3200);
-    }, 1800);
-  }
-
-  applyGates(result);
-
-  if (progress.isComplete() && progress.hasSeen('closing')) {
-    setTimeout(showResults, 1400);
+      openTalk(REGION1_CLEAR_BEATS, {
+        name: 'The Mentor',
+        speaker: 'mentor',
+        onDone: () => {
+          screens.setObjective('The road south is open.');
+          screens.toast('The road out of town is open.', 3200);
+        }
+      });
+    }, 2400);
     return;
   }
   nudge();
 }
 
-// Rebuild collision and re-bake the map whenever a gate opens, and say so.
-function applyGates(result) {
-  const { routeOpen, gateOpen, officeOpen } = progress.run;
-  if (!result.routeJustOpened && !result.gateJustOpened && !result.officeJustOpened) return;
-
-  rebuildCollision({ routeOpen, gateOpen, officeOpen });
-  render.bakeMap();
-
-  const delay = result.promotion ? 3600 : 2200;
-  setTimeout(() => {
-    sfx.unlock();
-    if (result.routeJustOpened) {
-      // The bridge beat: the reason Route 1 leads to Route 2 at all.
-      openTalk(BRIDGE_BEATS, {
-        name: 'Laura',
-        onDone: () => {
-          progress.setTitle(TITLES.route2);
-          flashPromotion();
-          updateHud();
-          screens.toast('The gate south is open. → ROUTE 2', 3200);
-          nudge();
-        }
-      });
-    } else if (result.gateJustOpened) {
-      screens.toast('The hoarding at the eastern edge comes down.');
-    } else if (result.officeJustOpened) {
-      screens.toast('A door opened past Route 2.');
-    }
-  }, delay);
-}
-
 function nudge() {
   const next = progress.nextTarget();
-  if (next && NUDGES[next]) screens.setObjective(NUDGES[next]);
-  else if (progress.run.officeOpen && !progress.hasSeen('closing')) {
-    screens.setObjective('There is a room past Route 2. Someone is waiting.');
-  }
+  const content = next && NPC_CONTENT[next];
+  if (content && content.hint) screens.setObjective(`Next badge: ${content.hint}`);
+  else screens.setObjective('');
 }
 
 // ---------------------------------------------------------------- HUD
 
-function paintDots(el, count, total) {
-  el.innerHTML = Array.from({ length: total },
-    (_, i) => `<i class="${i < count ? 'on' : ''}"></i>`).join('');
-}
-
 function updateHud() {
-  document.getElementById('hudTitle').textContent = progress.run.title;
-  paintDots(document.getElementById('fieldDots'), progress.fieldCount(), FIELD_ORDER.length);
-  paintDots(document.getElementById('platformDots'), progress.platformCount(), PLATFORM_ORDER.length);
-  document.getElementById('fieldCount').textContent = `${progress.fieldCount()}/${FIELD_ORDER.length}`;
-  document.getElementById('platformCount').textContent = `${progress.platformCount()}/${PLATFORM_ORDER.length}`;
-}
-
-function flashPromotion() {
-  const el = document.getElementById('hudJob');
-  updateHud();
-  el.classList.remove('promoted');
-  void el.offsetWidth;   // restart the animation
-  el.classList.add('promoted');
+  const dots = document.getElementById('badgeDots');
+  const count = document.getElementById('badgeCount');
+  const n = progress.badgeCount();
+  if (dots) {
+    dots.innerHTML = BADGE_ORDER
+      .map(id => `<i class="${progress.hasBadge(id) ? 'on' : ''}"></i>`).join('');
+  }
+  if (count) count.textContent = `${n}/${BADGE_ORDER.length}`;
 }
 
 let hintOn = false;
@@ -309,7 +255,7 @@ function showResults() {
     save: signedIn ? async () => {
       const { error } = await db.submitScore(
         session.user.id, progress.run.score,
-        progress.platformCount(), progress.fieldCount()
+        progress.badgeCount(), progress.trialCount(), progress.run.firstTry
       );
       if (error) return `Couldn't save: ${db.friendlyError(error)}`;
       landing.refreshPublic();
@@ -325,8 +271,7 @@ function showResults() {
 }
 
 function refreshWorld() {
-  const { routeOpen, gateOpen, officeOpen } = progress.run;
-  rebuildCollision({ routeOpen, gateOpen, officeOpen });
+  rebuildCollision({ region2Open: progress.run.region2Open });
   render.bakeMap();
 }
 
@@ -338,16 +283,13 @@ function startPlaying() {
   refreshWorld();
   updateHud();
 
-  // The opening plays once. It's the introduction to a person, not a tutorial
-  // to sit through on every visit, and progress already survives a reload.
-  //
-  // The objective chip waits until she's finished: pointing at the first stop
-  // while she's still explaining what the game is answers a question the
-  // player hasn't been given yet.
-  if (!progress.hasSeen('intro')) {
-    progress.markSeen('intro');
+  // The Mentor's briefing plays once. It's the only place the loop is stated
+  // outright — badges live in gyms, gyms are out there — so he also repeats it
+  // on demand for anyone who tapped through.
+  if (!progress.hasSeen('mentorIntro')) {
+    progress.markSeen('mentorIntro');
     screens.setObjective('');
-    openTalk(INTRO_BEATS, { name: 'LAURA', speaker: 'laura', onDone: nudge });
+    openTalk(MENTOR_BEATS, { name: 'The Mentor', speaker: 'mentor', onDone: nudge });
     return;
   }
   nudge();
@@ -355,11 +297,11 @@ function startPlaying() {
 
 function startNewRun() {
   progress.reset();
-  progress.markSeen('intro');   // replaying doesn't mean sitting through it again
+  progress.markSeen('mentorIntro');
   resetPlayer();
   refreshWorld();
   updateHud();
-  screens.setObjective('Read the sign, then find the workshop.');
+  nudge();
   mode = 'play';
 }
 
@@ -414,7 +356,7 @@ export function start() {
   landing.init({
     onStartGame: () => {
       mode = 'title';
-      screens.showTitle(progress.fieldCount() + progress.platformCount() > 0);
+      screens.showTitle(progress.badgeCount() > 0);
     }
   });
   landing.showLanding();

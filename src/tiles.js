@@ -131,10 +131,57 @@ const DEFS = {
     p.rect(3, 9, 10, 6, C.metal).rect(4, 8, 8, 2, C.metalLight);
     p.rect(2, 14, 12, 2, C.metalDark);
   },
-  // ---- Route 1: workplaces ------------------------------------------------
+  // ---- gyms ---------------------------------------------------------------
+  //
+  // A gym has to be identifiable at a glance from across the map, or the whole
+  // loop breaks: the player never learns that badges live in a particular kind
+  // of building. So gyms get a roof colour used nowhere else, plus a badge
+  // plate over the door and a banner beside it.
+  gymRoofTop(p)    { roof(p, C.gymRoof, true); },
+  gymRoofBottom(p) { roof(p, C.gymRoof, false); },
+
+  gymDoor(p) {
+    p.rect(0, 0, TS, TS, C.wall);
+    // Badge plate above the frame — the mark the player learns to look for.
+    p.rect(4, 0, 8, 4, C.gymRoof);
+    p.circle(8, 2, 2, C.gold);
+    p.set(8, 2, C.ink);
+    p.rect(4, 4, 8, 12, C.trunk);
+    p.rect(5, 5, 6, 5, C.trunkLight);
+    p.set(10, 12, C.gold);
+  },
+
+  gymBanner(p) {
+    p.rect(0, 0, TS, TS, C.wall);
+    p.rect(3, 0, 10, 13, C.gymRoof);
+    p.hline(3, 0, 10, shade(C.gymRoof, 1.2));
+    p.circle(8, 5, 3, C.gold);
+    p.circle(8, 5, 1, C.ink);
+    // Pennant tail.
+    for (let i = 0; i < 5; i++) p.hline(3 + i, 13 + (i % 2), 10 - i * 2, C.gymRoof);
+  },
+
+  // ---- Region 1: the town -------------------------------------------------
+  // Coffee. The horizon of the first region, and where the second gym is.
+  coffee(p) {
+    p.rect(0, 0, TS, TS, C.grassDark);
+    for (const [cx, cy] of [[4, 5], [11, 4], [7, 11], [13, 12]]) {
+      p.circle(cx, cy, 3, C.leafMid);
+      p.circle(cx - 1, cy - 1, 1, C.leafLight);
+      p.set(cx + 1, cy + 1, C.danger);   // cherries
+      p.set(cx - 2, cy + 1, C.danger);
+    }
+  },
   floor(p) {
     p.rect(0, 0, TS, TS, '#e0d8c8');
     p.hline(0, 0, TS, '#c8c0b0').vline(0, 0, TS, '#c8c0b0');
+  },
+  // The road out of the region, shut until the badges are in.
+  routeBlock(p) {
+    p.rect(0, 0, TS, TS, C.amberDark);
+    p.rect(0, 3, TS, 10, C.amber);
+    for (let x = 0; x < TS; x += 4) p.vline(x, 3, 10, C.amberDark);
+    p.hline(0, 3, TS, C.amberLight).hline(0, 12, TS, C.amberDark);
   },
   crate(p) {
     p.rect(0, 0, TS, TS, C.grass);
@@ -208,8 +255,10 @@ function roof(p, color, top) {
 export const SOLID = new Set([
   'water', 'tree', 'bush', 'sign', 'fence', 'fenceWork', 'server', 'pedestal',
   'roofTop', 'roofBottom', 'roofTopAlt', 'roofBottomAlt', 'roofTopDark', 'roofBottomDark',
+  'gymRoofTop', 'gymRoofBottom', 'gymDoor', 'gymBanner',
   'wall', 'window', 'door', 'doorLab', 'doorLocked',
-  'routeGate', 'crate', 'desk', 'machine', 'shelf', 'signpost'
+  'routeGate', 'routeBlock', 'crate', 'desk', 'machine', 'shelf', 'signpost',
+  'coffee'
 ]);
 
 // Minimap categories. Sampling average sprite colour doesn't work — every tile
@@ -220,7 +269,8 @@ const KIND = {
   path: 'road', plaza: 'road', gateOpen: 'road', floor: 'floor',
   water: 'water',
   tree: 'veg', bush: 'veg',
-  door: 'door', doorLab: 'door', doorLocked: 'wall'
+  door: 'door', doorLab: 'door', doorLocked: 'wall', gymDoor: 'door',
+  coffee: 'veg'
 };
 
 export function kindOf(name) {

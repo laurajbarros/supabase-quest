@@ -12,6 +12,8 @@
   --brand-dark: #249b6b;
   --gold:       #f8d030;
   --gold-dark:  #b88c08;
+  --gym:        #b4406a;
+  --gym-light:  #e07a9e;
   --amber:      #d9a441;
   --amber-dark: #9a6f22;
   --amber-light:#f0c777;
@@ -84,33 +86,6 @@ html, body {
   backdrop-filter: blur(3px);
 }
 
-/* ---------- job title ---------- */
-#hudJob {
-  font-size: clamp(10px, 2.9vw, 13px);
-  line-height: 1.25;
-  letter-spacing: .5px;
-  color: var(--paper);
-  /* Wraps rather than truncating: the longest title ends in "(pending)", and
-     an ellipsis would eat the one word the line exists to deliver. */
-  max-width: 62vw;
-}
-#hudJob b { color: var(--amber); }
-#hudTitle { color: var(--brand); }
-
-/* The promotion flash. A title that changes silently reads as a typo; a title
-   that flares reads as a promotion, which is the whole point of Route 1. */
-#hudJob.promoted { animation: promote 1.5s ease-out 1; }
-@keyframes promote {
-  0%   { transform: scale(1); }
-  12%  { transform: scale(1.12); filter: brightness(2.2); }
-  30%  { transform: scale(1); filter: brightness(1); }
-  45%  { filter: brightness(2.2); }
-  60%  { filter: brightness(1); }
-}
-@media (prefers-reduced-motion: reduce) {
-  #hudJob.promoted { animation: none; outline: 2px solid var(--gold); outline-offset: 3px; }
-}
-
 /* ---------- badge tracks ---------- */
 .track {
   display: flex;
@@ -129,12 +104,10 @@ html, body {
   background: #2c3a2c;
   border: 1px solid #3e4c3e;
 }
-/* Amber is the field, accent green is the platform — the two halves of the
-   game are told apart by colour everywhere they appear. */
-.track.field .dots i.on { background: var(--amber); border-color: var(--amber-light); }
-.track.platform .dots i.on { background: var(--brand); border-color: var(--brand-light); }
-.track.field .track-label { color: var(--amber); }
-.track.platform .track-label { color: var(--brand); }
+/* Gym pink, the same colour as the gym roofs on the map — an earned dot and
+   the building it came from are visibly the same thing. */
+.track.badges .dots i.on { background: var(--gym); border-color: var(--gym-light); }
+.track.badges .track-label { color: var(--gym-light); }
 
 /* ---------- HUD buttons ---------- */
 /* #hud itself is pointer-events:none so the map stays draggable underneath;
@@ -160,8 +133,8 @@ html, body {
 /* ---------- objective chip ---------- */
 #objective {
   position: absolute;
-  /* Clears the three-line HUD (title + two badge tracks). */
-  top: calc(92px + var(--sa-t));
+  /* Clears the single-line HUD. */
+  top: calc(62px + var(--sa-t));
   left: calc(8px + var(--sa-l));
   right: calc(8px + var(--sa-r));
   z-index: 5;
@@ -276,7 +249,7 @@ body.touch #touch { display: block; }
 #toast {
   position: absolute;
   left: 50%;
-  top: calc(140px + var(--sa-t));
+  top: calc(112px + var(--sa-t));
   transform: translate(-50%, -8px);
   z-index: 9;
   max-width: 84vw;
@@ -366,14 +339,19 @@ body.touch #touch { display: block; }
 
 /* Laura speaks in her own voice, not as one of the cast: dark box, brand-green
    name tag, so the frame around the game is visibly not part of it. */
-#dialogue.laura {
+#dialogue.mentor, #dialogue.laura {
   background: #16201a;
   color: #e6efd8;
   border-color: #0a1208;
   box-shadow: inset 0 0 0 2px #16201a, inset 0 0 0 4px #2a3a2a,
               0 6px 18px rgba(0, 0, 0, .5);
 }
-#dialogue.laura #dlgName { background: #0a1208; color: var(--brand); }
+#dialogue.mentor #dlgName, #dialogue.laura #dlgName { background: #0a1208; color: var(--brand); }
+
+/* The Rival gets his own colour so his three appearances read as one running
+   joke rather than three unrelated strangers. */
+#dialogue.rival { background: #241820; color: #f0dce6; border-color: #140c11; }
+#dialogue.rival #dlgName { background: #140c11; color: var(--gym-light); }
 
 /* A card is a stamp, not speech — a job title, a metric, a stage of a system
    being built. Centred, spaced, and it lands all at once. */

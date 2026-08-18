@@ -22,6 +22,10 @@ let onFinish = null;
 let onWorld = null;
 let answeredCorrectly = false;
 let pauseLeft = 0;
+// A wrong answer never blocks: it plays that option's retort and puts the
+// question straight back up. `attempts` is what costs points.
+let retrying = false;
+let attempts = 0;
 
 export function init() {
   el = {
@@ -61,6 +65,8 @@ export function open(newBeats, { name = '', speaker = 'npc', quiz: q = null,
   onWorld = world;
   answeredCorrectly = false;
   pauseLeft = 0;
+  retrying = false;
+  attempts = 0;
 
   el.box.className = 'visible ' + speaker;
   el.name.textContent = name;
@@ -88,8 +94,10 @@ function enterBeat() {
     const b = beatOf();
 
     if (b === undefined) {
-      if (quiz) askQuiz();
-      else close();
+      // A retort has just finished playing: back to the question.
+      if (retrying) { retrying = false; askQuiz(); return; }
+      if (quiz) { askQuiz(); return; }
+      close();
       return;
     }
     if (isText(b)) {
@@ -203,21 +211,29 @@ export function moveChoice(delta) {
 
 function confirm() {
   const picked = quiz.options[choice];
-  answeredCorrectly = !!picked.correct;
-  answeredCorrectly ? sfx.correct() : sfx.wrong();
+  const correct = !!picked.correct;
+  correct ? sfx.correct() : sfx.wrong();
 
-  // The follow-up is supplied by the caller and branches on the answer: the two
-  // routes acknowledge a wrong answer very differently, because one asks about
-  // facts and the other asks about judgment.
-  beats = quiz.resolve(answeredCorrectly, quiz.options.find(o => o.correct).text);
   index = 0;
   shown = 0;
   timer = 0;
-  quiz = null;
-  state = 'typing';
-
   el.choices.innerHTML = '';
-  paint();
+
+  if (!correct) {
+    // Wrong: play this option's own retort, then re-ask. Never a dead end.
+    attempts++;
+    retrying = true;
+    beats = [picked.retort || 'Not quite. Try again.'];
+    state = 'typing';
+    paint();
+    return;
+  }
+
+  // Right, eventually. "First try" is what the score keys off.
+  answeredCorrectly = attempts === 0;
+  beats = quiz.win ? [quiz.win] : [];
+  quiz = null;
+  enterBeat();
 }
 
 export function close() {
@@ -226,6 +242,7 @@ export function close() {
   el.name.style.display = '';
   document.body.classList.remove('dialog');
   const done = onFinish;
+  const tries = attempts;
   onFinish = null;
-  if (done) done({ correct: answeredCorrectly });
+  if (done) done({ firstTry: answeredCorrectly, attempts: tries });
 }

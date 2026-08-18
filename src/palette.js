@@ -38,6 +38,11 @@ export const C = {
   brandDark:  '#249b6b',
   brandLight: '#7ee2b8',
 
+  // Gyms. Used for nothing else on the map, deliberately: it is the entire
+  // mechanism by which a player learns to recognise where badges live.
+  gymRoof:     '#b4406a',
+  gymRoofDark: '#7d2547',
+
   // Route 1 — the field. Amber is the career half of the game: field badges,
   // job titles, the workplaces Laura actually worked in. Keeping it distinct
   // from brand green is what stops the two routes reading as one long quiz.
@@ -101,6 +106,7 @@ export const MONO = {
 
   [C.brand]: GB[2], [C.brandDark]: GB[0], [C.brandLight]: GB[3],
   [C.amber]: GB[2], [C.amberDark]: GB[0], [C.amberLight]: GB[3],
+  [C.gymRoof]: GB[1], [C.gymRoofDark]: GB[0],
 
   [C.ink]: GB[0], [C.inkSoft]: GB[0], [C.paper]: GB[3],
   [C.gold]: GB[3], [C.goldDark]: GB[1],
