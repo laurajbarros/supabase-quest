@@ -196,15 +196,11 @@ export async function submitRecommendation(userId, message) {
   return { error };
 }
 
-export async function approvedRecommendations(limit = 20) {
+export async function recentRecommendations(limit = 50) {
   const c = await getClient();
   if (!c) return { data: [], error: null };
-  // The `approved = true` filter is redundant with the RLS policy — an
-  // anonymous reader can't see anything else. It's here so the query uses the
-  // partial index, and so the intent is legible without cross-referencing.
   const { data, error } = await safe(() => c.from('recommendations')
     .select('id, message, created_at, user_id, profiles:user_id(display_name)')
-    .eq('approved', true)
     .order('created_at', { ascending: false })
     .limit(limit), []);
   return { data: data || [], error };

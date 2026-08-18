@@ -20,7 +20,10 @@ export const SUPABASE_ANON_KEY = 'sb_publishable_OAu98Qr3fjzeLdwitKnTDg_ex1w0D70
 // configured in Dashboard -> Authentication -> Sign In / Providers; the button
 // disappears rather than failing when tapped.
 export const AUTH_METHODS = {
-  magicLink: true,
+  // Off: Supabase's built-in email service only delivers to organisation
+  // members, so a magic link is a dead end for every visitor. Restore the
+  // block in index.html and the handler in landing.js once custom SMTP exists.
+  magicLink: false,
   google: true,
   github: true,
   // Off until custom SMTP exists. Signing in to an existing account needs no
@@ -29,13 +32,6 @@ export const AUTH_METHODS = {
   // org can get an account to sign in with.
   password: false
 };
-
-// Set to true once a custom SMTP provider is configured in
-// Dashboard -> Authentication -> Emails. Until then Supabase's built-in email
-// service only delivers to organisation team members and caps at 2 messages an
-// hour, so magic links silently fail for everyone else — the sign-in screen
-// says so rather than letting visitors discover it.
-export const EMAIL_DELIVERY_CONFIGURED = false;
 
 // Unlisted YouTube video id for the landing page. Leave empty to hide the
 // player until the video exists.

@@ -2,7 +2,7 @@
 // nickname prompt. Plain DOM — this is a web page, not a game screen.
 
 import * as db from './supabase.js';
-import { YOUTUBE_ID, EMAIL_DELIVERY_CONFIGURED } from '../config.js';
+import { YOUTUBE_ID } from '../config.js';
 
 let el = {};
 let onPlay = () => {};
@@ -21,9 +21,6 @@ export function init({ onStartGame }) {
 
     login: document.getElementById('login'),
     loginErr: document.getElementById('loginError'),
-    magicEmail: document.getElementById('magicEmail'),
-    magicBtn: document.getElementById('btnMagic'),
-    magicNote: document.getElementById('magicNote'),
     oauth: document.getElementById('oauthRow'),
     pwToggle: document.getElementById('pwToggle'),
     pwForm: document.getElementById('pwForm'),
@@ -114,16 +111,6 @@ function bind() {
     startGame();
   });
 
-  el.magicBtn.addEventListener('click', async () => {
-    const email = el.magicEmail.value.trim();
-    if (!email) return setLoginError('Enter your email first.');
-    setBusy(el.magicBtn, true, 'Sending…');
-    const { error } = await db.signInWithMagicLink(email);
-    setBusy(el.magicBtn, false, 'Send magic link');
-    if (error) return setLoginError(db.friendlyError(error));
-    setLoginError(`Link sent to ${email}. Check your inbox.`, 'ok');
-  });
-
   el.oauth.addEventListener('click', async e => {
     // closest(), not e.target: the click usually lands on the <svg> or a <path>
     // inside the button rather than the button itself.
@@ -189,18 +176,12 @@ function bind() {
 
 function showLogin() {
   setLoginError('');
-  // Until custom SMTP is set up, say so here rather than letting someone send
-  // themselves a link that will never arrive.
-  el.magicNote.textContent = EMAIL_DELIVERY_CONFIGURED
-    ? ''
-    : 'Email delivery is still being set up — Google or GitHub is the reliable way in right now.';
   // Only offer what the project actually has switched on.
   el.oauth.querySelectorAll('[data-provider]').forEach(b => {
     b.style.display = db.AUTH_METHODS[b.dataset.provider] ? '' : 'none';
   });
   const anyOauth = [...el.oauth.querySelectorAll('[data-provider]')].some(b => b.style.display !== 'none');
   el.oauth.style.display = anyOauth ? '' : 'none';
-  document.getElementById('oauthDivider').style.display = anyOauth ? '' : 'none';
   // Hide the form too, not just its toggle: a stale `open` class would
   // otherwise leave a dead sign-in form on screen.
   el.pwToggle.style.display = db.AUTH_METHODS.password ? '' : 'none';
@@ -231,7 +212,7 @@ export async function refreshPublic() {
   // played" rather than "still loading".
   el.board.innerHTML = '<li class="empty">Loading…</li>';
 
-  const { data: scores, error } = await db.topScores(10);
+  const { data: scores, error } = await db.topScores(200);
   if (error) {
     el.board.innerHTML = `<li class="empty">Couldn't load the leaderboard. ${escapeHtml(db.friendlyError(error))}</li>`;
   } else if (!scores.length) {
@@ -247,7 +228,7 @@ export async function refreshPublic() {
       </li>`).join('');
   }
 
-  const { data: recs } = await db.approvedRecommendations();
+  const { data: recs } = await db.recentRecommendations();
   el.recs.innerHTML = recs.length
     ? recs.map(r => `<blockquote>${escapeHtml(r.message)}
         <cite>— ${escapeHtml((r.profiles && r.profiles.display_name) || 'anonymous')}</cite>

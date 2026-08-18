@@ -131,6 +131,13 @@ export function showResults({ onPlayAgain, onHome, save = null, recommend = null
           <span id="recCount">0/200</span>
         </div>
         <p id="recStatus" role="status" aria-live="polite"></p>
+        <div id="whyBuilt">
+          <h3>Why I built this</h3>
+          <p>I want this role, and I'd rather show you that than tell you.</p>
+          <p>This is how I work. When something matters, I go a step further
+             than what was asked for.</p>
+          <p class="sig">&mdash; Laura</p>
+        </div>
       </div>` : ''}
     <div class="result-actions">
       <a class="ghost link" href="https://www.linkedin.com/in/laurajbarros/"
@@ -174,8 +181,14 @@ export function showResults({ onPlayAgain, onHome, save = null, recommend = null
       status.className = failed ? 'err' : 'ok';
       // Held until approved in the dashboard, so say so rather than implying
       // it's already on the wall.
-      if (failed) btn.disabled = false;
-      else { input.disabled = true; btn.style.display = 'none'; }
+      if (failed) { btn.disabled = false; return; }
+
+      input.disabled = true;
+      btn.style.display = 'none';
+      count.style.display = 'none';
+      // Once they've written something, say why this exists. Held until after
+      // the note so it reads as an answer rather than a pitch.
+      document.getElementById('whyBuilt').classList.add('visible');
     });
   }
 

@@ -35,7 +35,7 @@ create table if not exists recommendations (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references profiles(id) on delete cascade,
   message text not null check (char_length(message) <= 200),
-  approved boolean not null default false,
+  approved boolean not null default true,
   created_at timestamptz default now()
 );
 
@@ -43,8 +43,8 @@ create table if not exists recommendations (
 -- matches that ordering exactly and the query never sorts.
 create index if not exists scores_score_desc_idx on scores (score desc, completed_at asc);
 create index if not exists scores_user_id_idx on scores (user_id);
--- Partial index: the public wall only ever reads approved rows.
-create index if not exists recommendations_approved_idx on recommendations (approved) where approved = true;
+-- The wall reads every note, newest first.
+create index if not exists recommendations_created_idx on recommendations (created_at desc);
 
 -- ============================================================
 -- Row Level Security
@@ -78,21 +78,22 @@ drop policy if exists "insert own scores" on scores;
 create policy "insert own scores" on scores
   for insert with check ((select auth.uid()) = user_id);
 
+-- Notes are public the moment they're written. The tradeoff: anyone who can
+-- sign in can publish 200 characters to a page attached to a job application,
+-- unreviewed. The `approved` column is kept so moderation is one policy away.
 drop policy if exists "approved recs public" on recommendations;
-create policy "approved recs public" on recommendations
-  for select using (approved = true);
-
 drop policy if exists "read own recs" on recommendations;
-create policy "read own recs" on recommendations
-  for select using ((select auth.uid()) = user_id);
+drop policy if exists "recs public read" on recommendations;
+create policy "recs public read" on recommendations
+  for select using (true);
 
 drop policy if exists "insert own recs" on recommendations;
 create policy "insert own recs" on recommendations
   for insert with check ((select auth.uid()) = user_id);
 
--- No update policy on recommendations, deliberately. Approval happens in the
--- dashboard; there is no code path that can flip `approved` from the browser,
--- because there is no policy that would let one exist.
+-- No update policy on recommendations, deliberately. Nobody can edit or retract
+-- a note from the browser, including its author — there is no policy that would
+-- let one exist.
 
 -- ============================================================
 -- Leaderboard view.
