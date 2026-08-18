@@ -185,6 +185,38 @@ const CAST = {
   onACall: () => makeHuman({
     skin: SKIN.light, hair: HAIR.grey, longHair: true,
     shirt: '#7a6a9a', pants: '#33384a', shoes: '#242424'
+  }),
+
+  // ---- Region 3: the League. Brand green, so the trials read as a different
+  // kind of challenge from the pink gyms.
+  leagueOne: () => makeHuman({
+    skin: SKIN.mid, hair: HAIR.black, shirt: C.brandDark, pants: '#24303a', shoes: '#161c22'
+  }),
+  leagueTwo: () => makeHuman({
+    skin: SKIN.deep, hair: HAIR.black, longHair: true,
+    shirt: C.brandDark, pants: '#24303a', shoes: '#161c22', glasses: C.ink
+  }),
+  leagueThree: () => makeHuman({
+    skin: SKIN.light, hair: '#6b4423', shirt: C.brandDark, pants: '#24303a', shoes: '#161c22'
+  }),
+  leagueFour: () => makeHuman({
+    skin: SKIN.darker, hair: HAIR.grey, shirt: C.brandDark, pants: '#24303a',
+    shoes: '#161c22', coat: '#2f4a40'
+  }),
+
+  colleague: () => makeHuman({
+    skin: SKIN.light, hair: HAIR.brown, shirt: '#4a6a8a', pants: '#2e3a4a', shoes: '#1e2028'
+  }),
+  huddle: () => makeHuman({
+    skin: SKIN.deep, hair: HAIR.black, shirt: '#8a6a4a', pants: '#3a3028', shoes: '#201a14'
+  }),
+  growth: () => makeHuman({
+    skin: SKIN.mid, hair: '#c8501e', longHair: true,
+    shirt: '#d8b038', pants: '#33384a', shoes: '#242424'
+  }),
+  whiteboard: () => makeHuman({
+    skin: SKIN.light, hair: HAIR.grey, shirt: '#6a6a7a', pants: '#33384a',
+    shoes: '#242424', glasses: C.ink
   })
 };
 

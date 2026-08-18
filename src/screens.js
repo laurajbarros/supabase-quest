@@ -113,7 +113,11 @@ export function showResults({ onPlayAgain, onHome, save = null, recommend = null
       &middot; ${trialCount()}/${TRIAL_ORDER.length} trials
       &middot; ${run.firstTry} first try</p>
     <ul class="badges">${earned}</ul>
-    <p class="note">${allBadges() ? 'Every badge was a problem nobody assigned her.' : 'Run ended early.'}</p>
+    <p class="note">${allBadges()
+      ? 'Every badge was a problem nobody assigned her.'
+      : 'Run ended early.'}</p>
+    <p class="muted">The last region hasn't been played yet.
+      She'd love the chance to play it at Supabase.</p>
     <p id="saveStatus" class="save" role="status" aria-live="polite"></p>
     ${recommend ? `
       <div class="rec-box">
@@ -127,6 +131,10 @@ export function showResults({ onPlayAgain, onHome, save = null, recommend = null
         <p id="recStatus" role="status" aria-live="polite"></p>
       </div>` : ''}
     <div class="result-actions">
+      <a class="ghost link" href="https://www.linkedin.com/in/laurajbarros/"
+         target="_blank" rel="noopener">LinkedIn</a>
+      <a class="ghost link" href="https://github.com/laurajbarros/supabase-quest"
+         target="_blank" rel="noopener">Repo</a>
       <button class="again" data-again>Play again</button>
       <button class="ghost" data-home>Back to the page</button>
     </div>

@@ -11,13 +11,14 @@ import * as progress from './progress.js';
 import { setMonochrome, isMonochrome, TS } from './painter.js';
 import { player, update as updatePlayer, facingTile, resetPlayer } from './player.js';
 import {
-  NPCS, GYM_IDS, ROUTE_GATE, LEAGUE_DOOR, TOWN_SIGN, BUS_STOP, NEXT_SIGN,
+  NPCS, GYM_IDS, ROUTE_GATE, LEAGUE_DOOR, TOWN_SIGN, BUS_STOP,
   npcAt, rebuildCollision, grid
 } from './map.js';
 import {
   NPC_CONTENT, BADGE_ORDER, MENTOR_BEATS,
   REGION1_CLEAR_BEATS, REGION2_LOCKED_BEATS, LEAGUE_LOCKED_BEATS,
-  PRESENT_MOMENT_BEATS, NEXT_BUILD_BEATS
+  PRESENT_MOMENT_BEATS, LEAGUE_ENTRY_BEATS, TRIALS_UNFINISHED_BEATS,
+  HALL_OF_FAME_BEATS, TRIAL_ORDER
 } from './content.js';
 import { sfx, isMuted, setMuted } from './audio.js';
 import * as landing from './landing.js';
@@ -50,6 +51,10 @@ function interactables() {
     if (!content) continue;
     if (content.gym) {
       if (!progress.hasBadge(n.id)) out.push({ x: n.x, y: n.y });
+    } else if (content.trial) {
+      if (!progress.hasTrial(n.id)) out.push({ x: n.x, y: n.y });
+    } else if (n.id === 'hallOfFame') {
+      if (progress.allTrials()) out.push({ x: n.x, y: n.y });
     } else if (!progress.hasSeen(n.id)) {
       out.push({ x: n.x, y: n.y });
     }
@@ -70,9 +75,6 @@ function targetInFront() {
   }
   if (f.x === BUS_STOP.x && f.y === BUS_STOP.y) {
     return { kind: 'sign', name: 'BUS STOP', beats: ['BUS STOP', 'Next bus: eventually.'] };
-  }
-  if (f.x === NEXT_SIGN.x && f.y === NEXT_SIGN.y) {
-    return { kind: 'sign', name: 'SIGN', beats: NEXT_BUILD_BEATS };
   }
   if (f.x === ROUTE_GATE.x && f.y === ROUTE_GATE.y && !progress.run.region2Open) {
     return { kind: 'sign', name: 'ROAD', beats: REGION2_LOCKED_BEATS };
@@ -103,8 +105,24 @@ function interact() {
     return;
   }
 
-  // A cleared gym gets its closing line, so returning isn't a dead end.
-  if (content.gym && progress.hasBadge(npc.id)) {
+  // The Mentor at the end of the hall. He only has something to say once all
+  // four trials are done.
+  if (npc.id === 'hallOfFame') {
+    if (!progress.allTrials()) {
+      openTalk(TRIALS_UNFINISHED_BEATS, { name: content.name, speaker: 'mentor' });
+      return;
+    }
+    openTalk(HALL_OF_FAME_BEATS, {
+      name: content.name,
+      speaker: 'mentor',
+      onDone: () => setTimeout(showResults, 400)
+    });
+    return;
+  }
+
+  // A cleared gym or trial gets its closing line, so returning isn't a dead end.
+  if ((content.gym && progress.hasBadge(npc.id)) ||
+      (content.trial && progress.hasTrial(npc.id))) {
     openTalk([content.postWin], { name: content.name });
     return;
   }
@@ -121,9 +139,26 @@ function interact() {
 
   openTalk(content.beats, {
     name: content.name,
+    speaker: content.trial ? 'mentor' : 'npc',
     quiz: content.quiz,
-    onDone: result => finishGym(npc, result)
+    onDone: result => (content.trial ? finishTrial(npc, result) : finishGym(npc, result))
   });
+}
+
+function finishTrial(npc, { firstTry }) {
+  const content = NPC_CONTENT[npc.id];
+  const result = progress.awardTrial(npc.id, firstTry);
+  if (!result.trial) return;
+
+  sfx.badge();
+  screens.toast(`${content.name} cleared · +${firstTry ? 100 : 50}`, 3000);
+  updateHud();
+
+  if (progress.allTrials()) {
+    screens.setObjective('The Mentor is waiting at the end of the hall.');
+  } else {
+    screens.setObjective(`Trial ${progress.trialCount()} of ${TRIAL_ORDER.length} cleared.`);
+  }
 }
 
 function openTalk(beats, opts = {}) {
@@ -137,6 +172,19 @@ function openTalk(beats, opts = {}) {
       refreshWorld();
     },
     ...opts
+  });
+}
+
+// The League's opening plays the first time the player steps past the door.
+function checkLeagueEntry() {
+  if (mode !== 'play') return;
+  if (!progress.run.leagueOpen || progress.hasSeen('leagueEntry')) return;
+  if (player.ty <= LEAGUE_DOOR.y) return;
+  progress.markSeen('leagueEntry');
+  openTalk(LEAGUE_ENTRY_BEATS, {
+    name: 'The Mentor',
+    speaker: 'mentor',
+    onDone: () => screens.setObjective('Four trials, down the hall.')
   });
 }
 
@@ -188,6 +236,19 @@ function updateHud() {
       .map(id => `<i class="${progress.hasBadge(id) ? 'on' : ''}"></i>`).join('');
   }
   if (count) count.textContent = `${n}/${BADGE_ORDER.length}`;
+
+  // The trials row only appears once there are trials to run.
+  const trials = document.getElementById('trialTrack');
+  if (trials) {
+    trials.style.display = progress.run.leagueOpen ? '' : 'none';
+    const td = document.getElementById('trialDots');
+    if (td) {
+      td.innerHTML = TRIAL_ORDER
+        .map(id => `<i class="${progress.hasTrial(id) ? 'on' : ''}"></i>`).join('');
+    }
+    const tc = document.getElementById('trialCount');
+    if (tc) tc.textContent = `${progress.trialCount()}/${TRIAL_ORDER.length}`;
+  }
 }
 
 let hintOn = false;
@@ -221,6 +282,7 @@ function frame(now) {
     dialogue.update(dt);
     if (mode === 'dialog' && !dialogue.isOpen()) mode = 'play';
 
+    checkLeagueEntry();
     updateHint();
     render.updateCamera(player.px, player.py);
     render.draw(entities(), { marks: mode === 'play' ? interactables() : [], time: clock });

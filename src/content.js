@@ -377,6 +377,179 @@ export const NPC_CONTENT = {
       'Four badges?',
       'I have three certifications and a newsletter.'
     ]
+  },
+  // ============================================ REGION 3 — THE SUPABASE LEAGUE
+  //
+  // Four trials, no badges. Future tense: nothing here has happened. The wrong
+  // answers stop being jokes — this is judgment, and the tonal shift is what
+  // makes the ending land.
+
+  learn: {
+    trial: true,
+    region: 3,
+    name: 'Learn the Platform',
+    beats: [
+      "You know architecture.",
+      "You don't know Supabase — not the way you'd need to."
+    ],
+    quiz: {
+      question: 'What would you do?',
+      options: [
+        {
+          text: 'Study the docs and the competition, sit in on customer calls, and take smaller projects to learn by doing',
+          correct: true
+        },
+        {
+          text: 'Block off a few weeks to go through everything before touching anything client-facing',
+          retort: "You'd know the product and not the customers. Half a map. Try again."
+        },
+        {
+          text: 'Skip the ramp-up — general architecture experience transfers fine',
+          retort: 'Confidence without context is just noise. Try again.'
+        }
+      ],
+      win: 'You learn the platform and the customers at the same time. Onward.'
+    },
+    postWin: 'Half a map is worse than no map.'
+  },
+
+  discovery: {
+    trial: true,
+    region: 3,
+    name: 'The Discovery Call',
+    beats: [
+      'First real call. An enterprise team is migrating off a managed Postgres provider.',
+      'They open with: "Can Supabase handle 40,000 concurrent connections?"',
+      'Growth is on the call too. They need a usage estimate by Friday.'
+    ],
+    quiz: {
+      question: 'What would you do?',
+      options: [
+        {
+          text: "Ask what's driving the number — traffic shape, workload, growth plan — then set honest expectations and define success",
+          correct: true
+        },
+        {
+          text: 'Say yes and move to the demo — the platform can handle it',
+          retort: 'You won the call and lost the account six months later. Try again.'
+        },
+        {
+          text: 'Give them the connection pooling docs and let them work it out',
+          retort: "They didn't need a link. They needed a thinking partner. Try again."
+        }
+      ],
+      win: 'Real requirements surface. Growth gets a number they can trust. Onward.'
+    },
+    postWin: 'The number was never the question.'
+  },
+
+  pov: {
+    trial: true,
+    region: 3,
+    name: 'The Proof of Value',
+    beats: [
+      "They're interested. Now they want to see it work with their own data.",
+      'Their team can spare about three weeks.',
+      'Their CTO wants proof, not a tour.'
+    ],
+    quiz: {
+      question: 'What would you do?',
+      options: [
+        {
+          text: 'Scope it to the workload that decides the deal, agree timeline and success criteria up front, and stay close through the build',
+          correct: true
+        },
+        {
+          text: 'Show everything — Auth, Storage, Realtime, Edge Functions, Vector — so they see the full platform',
+          retort: 'Week three. Nothing finished, everything demoed. Try again.'
+        },
+        {
+          text: 'Hand them onboarding docs and a guide, then check in at the end',
+          retort: 'Self-serve is a product strategy, not a POV strategy. Try again.'
+        }
+      ],
+      win: 'They hit the criteria you agreed on together. They\u2019re comfortable moving forward. Onward.'
+    },
+    postWin: 'Narrow beats broad, every time.'
+  },
+
+  advisor: {
+    trial: true,
+    region: 3,
+    name: 'Trusted Advisor',
+    beats: [
+      'Months in. Your accounts are live — this is their production data now.',
+      'And you keep seeing the same query patterns choke the same way across four of them.',
+      'Every account has a workaround. None of them should have needed one.'
+    ],
+    quiz: {
+      question: 'What would you do?',
+      options: [
+        {
+          text: 'Fix it per account, then take the pattern to Product and Engineering as platform feedback — and tell the customers what\u2019s coming',
+          correct: true
+        },
+        {
+          text: 'Document the workaround so every CSA can apply it',
+          retort: 'You scaled the workaround, not the fix. Gym 6, remember? Try again.'
+        },
+        {
+          text: 'Keep resolving them account by account — the customers are happy',
+          retort: 'Happy today, blocked at the next order of magnitude. Try again.'
+        }
+      ],
+      win: 'You advocate for the customer inside Supabase, and for the platform in front of the customer. That\u2019s the whole job. Onward.'
+    },
+    postWin: 'Same instinct as the Architect badge. Bigger room.'
+  },
+
+  // ============================================ FLAVOUR — REGION 3
+
+  colleague: {
+    region: 3,
+    name: 'Colleague',
+    beats: ['Docs are good. Customer calls are better.', 'Do both.']
+  },
+
+  huddle: {
+    region: 3,
+    name: 'Someone in a Huddle',
+    beats: [
+      'Customer asked for a number.',
+      'What they meant was "will this break in March."'
+    ]
+  },
+
+  growth: {
+    region: 3,
+    name: 'Growth Teammate',
+    beats: [
+      "Best POVs I've seen were narrow.",
+      'Worst ones tried to be a product tour.'
+    ]
+  },
+
+  whiteboard: {
+    region: 3,
+    name: 'By the Whiteboard',
+    beats: [
+      "If you hear it three times, it's not a bug report.",
+      "It's a roadmap."
+    ]
+  },
+
+  rival3: {
+    region: 3,
+    name: 'Rival',
+    rival: true,
+    beats: ['\u2026okay, that\u2019s actually a good career.']
+  },
+
+  // The Mentor at the end of the hall.
+  hallOfFame: {
+    region: 3,
+    name: 'The Mentor',
+    beats: []
   }
 };
 
@@ -421,9 +594,27 @@ export const PRESENT_MOMENT_BEATS = [
   'Ready?'
 ];
 
-// Placeholder past the League door until Region 3 is built.
-export const NEXT_BUILD_BEATS = [
-  'THE SUPABASE LEAGUE',
-  'The four trials arrive in the next build.',
-  'Thanks for testing.'
+export const LEAGUE_ENTRY_BEATS = [
+  { card: 'THE SUPABASE LEAGUE' },
+  'Four trials. No badges.',
+  'None of this has happened yet.',
+  'Answer as you would.'
+];
+
+export const TRIALS_UNFINISHED_BEATS = [
+  'Four trials stand between you and the Hall of Fame.',
+  'Finish them.'
+];
+
+export const HALL_OF_FAME_BEATS = [
+  { card: 'HALL OF FAME' },
+  'Laura entered the Hall of Fame.',
+  { pause: 700 },
+  'From a coffee farm in the red to AI products.',
+  'Every badge was a problem nobody assigned her.',
+  { pause: 500 },
+  "The last region hasn't been played yet.",
+  "She'd love the chance to play it at Supabase.",
+  { pause: 400 },
+  'Thank you for playing!'
 ];

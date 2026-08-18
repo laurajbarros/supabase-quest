@@ -4,20 +4,20 @@
 //   row      21   the road out, opened by three badges
 //   rows 22..44   REGION 2 — RebelMouse. An office floor, four gyms.
 //   row      44   the League door, opened by all seven badges
-//   rows 45..48   a holding area until Region 3 is built
+//   rows 45..64   REGION 3 — The Supabase League. A linear hall, four trials.
 //
-// Region 3 extends this grid downward in the next pass. One grid rather than
-// separate maps with warps: the camera, collision and renderer already handle
-// an arbitrary grid, so stacking costs nothing.
+// One grid rather than separate maps with warps: the camera, collision and
+// renderer already handle an arbitrary grid, so stacking costs nothing.
 
 import { SOLID, kindOf } from './tiles.js';
 
 export const MAP_W = 30;
-export const MAP_H = 50;
+export const MAP_H = 66;
 
 const GATE_ROW = 21;
 const OFFICE = 22;         // Region 2 occupies rows 22..44
 const LEAGUE_ROW = 44;     // the office's back wall, with the League door in it
+const HALL = 45;           // Region 3 occupies rows 45..64
 
 function mkGrid(w, h, fillName) {
   return Array.from({ length: h }, () => Array(w).fill(fillName));
@@ -69,7 +69,7 @@ export const ROUTE_GATE = { x: 15, y: GATE_ROW };
 export const TOWN_SIGN = { x: 16, y: 18 };
 export const BUS_STOP = { x: 13, y: 7 };
 export const LEAGUE_DOOR = { x: 15, y: LEAGUE_ROW };
-export const NEXT_SIGN = { x: 16, y: LEAGUE_ROW + 2 };
+export const HALL_END = { x: 15, y: 63 };
 
 export const PLAYER_START = { x: 15, y: 19 };
 
@@ -84,7 +84,7 @@ function build() {
   buildTown(g);
   buildGate(g);
   buildOffice(g);
-  buildHolding(g);
+  buildHall(g);
   return g;
 }
 
@@ -161,10 +161,24 @@ function buildOffice(g) {
   set(g, LEAGUE_DOOR.x, LEAGUE_DOOR.y, 'doorLocked');
 }
 
-// Everything past the League door until Region 3 exists.
-function buildHolding(g) {
-  fill(g, 15, LEAGUE_ROW + 1, 1, 3, 'path');
-  set(g, NEXT_SIGN.x, NEXT_SIGN.y, 'sign');
+// ---------------------------------------------------------------- Region 3
+//
+// A hall, not a map. Your document is explicit that the League has no
+// exploration, so the four trials sit in sequence down one corridor. The
+// flavour NPCs are spaced between them so there is still walking to do
+// between twenty-odd lines of dialogue.
+function buildHall(g) {
+  fill(g, 1, HALL, MAP_W - 2, MAP_H - 1 - HALL, 'wall');
+  fill(g, 12, HALL, 7, MAP_H - 2 - HALL, 'floor');
+  fill(g, 14, HALL, 3, MAP_H - 2 - HALL, 'plaza');
+
+  // Trial alcoves, alternating sides, marked in Supabase green rather than gym
+  // pink: these are trials, and they hand out no badges.
+  for (const [x, y] of [[10, 48], [17, 52], [10, 56], [17, 60]]) {
+    fill(g, x, y - 1, 3, 1, 'roofTop');
+    fill(g, x, y, 3, 1, 'roofBottom');
+  }
+  [[11, 62], [18, 62], [11, 46], [18, 46]].forEach(([x, y]) => set(g, x, y, 'plant'));
 }
 
 // ---------------------------------------------------------------- NPCs
@@ -199,7 +213,19 @@ export const NPCS = [
   { id: 'coffeeMachine', char: 'coffeeDrinker', x: 20, y: 35, dir: 'up',    name: 'At the Coffee Machine' },
   { id: 'onACall',       char: 'onACall',       x: 9,  y: 39, dir: 'right', name: 'Person on a Call' },
 
-  { id: 'rival2', char: 'rival', x: 17, y: 24, dir: 'left', name: 'Rival' }
+  { id: 'rival2', char: 'rival', x: 17, y: 24, dir: 'left', name: 'Rival' },
+
+  // ---- Region 3: the Supabase League
+  { id: 'rival3',    char: 'rival',      x: 17, y: 46, dir: 'left',  name: 'Rival' },
+  { id: 'colleague', char: 'colleague',  x: 13, y: 47, dir: 'right', name: 'Colleague' },
+  { id: 'learn',     char: 'leagueOne',  x: 13, y: 49, dir: 'right', name: 'Learn the Platform' },
+  { id: 'huddle',    char: 'huddle',     x: 17, y: 50, dir: 'left',  name: 'Someone in a Huddle' },
+  { id: 'discovery', char: 'leagueTwo',  x: 17, y: 53, dir: 'left',  name: 'The Discovery Call' },
+  { id: 'growth',    char: 'growth',     x: 13, y: 54, dir: 'right', name: 'Growth Teammate' },
+  { id: 'pov',       char: 'leagueThree', x: 13, y: 57, dir: 'right', name: 'The Proof of Value' },
+  { id: 'whiteboard', char: 'whiteboard', x: 17, y: 58, dir: 'left', name: 'By the Whiteboard' },
+  { id: 'advisor',   char: 'leagueFour', x: 17, y: 61, dir: 'left',  name: 'Trusted Advisor' },
+  { id: 'hallOfFame', char: 'mentor',    x: 15, y: 63, dir: 'up',    name: 'The Mentor' }
 ];
 
 export const GYM_IDS = ['determination', 'entrepreneur', 'bridge',
@@ -264,7 +290,7 @@ export function reachabilityReport(gates = {}) {
 
   const reachable = new Set();
   for (const n of NPCS) if (adjacent(n.x, n.y)) reachable.add(n.id);
-  for (const [name, s] of [['town-sign', TOWN_SIGN], ['bus-stop', BUS_STOP], ['next-sign', NEXT_SIGN]]) {
+  for (const [name, s] of [['town-sign', TOWN_SIGN], ['bus-stop', BUS_STOP], ['hall-end', HALL_END]]) {
     if (adjacent(s.x, s.y)) reachable.add(name);
   }
   return reachable;
@@ -279,7 +305,8 @@ rebuildCollision();
   };
 
   const region1Ids = NPCS.filter(n => n.y < GATE_ROW).map(n => n.id);
-  const region2Ids = NPCS.filter(n => n.y > GATE_ROW).map(n => n.id);
+  const region2Ids = NPCS.filter(n => n.y > GATE_ROW && n.y < LEAGUE_ROW).map(n => n.id);
+  const region3Ids = NPCS.filter(n => n.y > LEAGUE_ROW).map(n => n.id);
 
   const closed = reachabilityReport({});
   must(closed, region1Ids.concat(['town-sign', 'bus-stop']), 'region 1');
@@ -288,12 +315,11 @@ rebuildCollision();
 
   const region2 = reachabilityReport({ region2Open: true });
   must(region2, region2Ids, 'region 2');
-  if (region2.has('next-sign')) {
-    throw new Error('Map: the League door is open before seven badges');
-  }
+  const early = region3Ids.filter(id => region2.has(id));
+  if (early.length) throw new Error(`Map: the League is open before seven badges — ${early.join(', ')}`);
 
   const all = reachabilityReport({ region2Open: true, leagueOpen: true });
-  must(all, ['next-sign'], 'league open');
+  must(all, region3Ids.concat(['hall-end']), 'league open');
 
   // Reset to the closed state for the actual game.
   grid[ROUTE_GATE.y][ROUTE_GATE.x] = 'routeBlock';

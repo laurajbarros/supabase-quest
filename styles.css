@@ -108,6 +108,8 @@ html, body {
    the building it came from are visibly the same thing. */
 .track.badges .dots i.on { background: var(--gym); border-color: var(--gym-light); }
 .track.badges .track-label { color: var(--gym-light); }
+.track.trials .dots i.on { background: var(--brand); border-color: var(--brand-light); }
+.track.trials .track-label { color: var(--brand); }
 
 /* ---------- HUD buttons ---------- */
 /* #hud itself is pointer-events:none so the map stays draggable underneath;
@@ -883,6 +885,11 @@ body.public #dialogue, body.public #titleScreen { display: none; }
 #recCount { font-size: 12px; color: #4d6a4d; }
 #recCount.full { color: var(--gold); }
 .result-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+.result-actions .link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+}
 .result-actions .ghost {
   min-height: 48px;
   padding: 0 18px;
