@@ -26,6 +26,13 @@ export const AUTH_METHODS = {
   password: true
 };
 
+// Set to true once a custom SMTP provider is configured in
+// Dashboard -> Authentication -> Emails. Until then Supabase's built-in email
+// service only delivers to organisation team members and caps at 2 messages an
+// hour, so magic links silently fail for everyone else — the sign-in screen
+// says so rather than letting visitors discover it.
+export const EMAIL_DELIVERY_CONFIGURED = false;
+
 // Unlisted YouTube video id for the landing page. Leave empty to hide the
 // player until the video exists.
 export const YOUTUBE_ID = 'g70b_OH6dtc';

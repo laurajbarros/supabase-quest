@@ -54,7 +54,15 @@ export function friendlyError(error) {
   if (msg.includes('password should be')) return 'Password needs to be at least 6 characters.';
   if (msg.includes('otp') && msg.includes('expired')) return 'That link has expired. Send yourself a fresh one.';
   if (msg.includes('expired')) return 'That link has expired. Send yourself a fresh one.';
-  if (msg.includes('rate limit') || msg.includes('too many')) return 'Too many attempts. Give it a minute.';
+  // Supabase's built-in email service sends only to organisation team members
+  // and caps at 2 messages an hour. Both failures are invisible from the
+  // client unless they're named, and both look like "the login is broken".
+  if (msg.includes('not authorized') || msg.includes('not authorised')) {
+    return 'Email sign-in isn\'t available for this address yet. Try Google or GitHub.';
+  }
+  if (msg.includes('rate limit') || msg.includes('too many') || msg.includes('over_email_send_rate')) {
+    return 'Email sign-in is rate-limited right now. Try Google or GitHub.';
+  }
   if (msg.includes('provider is not enabled')) return 'That sign-in method isn\'t switched on for this project.';
   if (msg.includes('failed to fetch') || msg.includes('network')) return 'Network problem — check your connection.';
   if (msg.includes('redirect')) return 'This URL isn\'t in the project\'s allowed redirects yet.';

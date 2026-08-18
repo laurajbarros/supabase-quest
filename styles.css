@@ -744,6 +744,13 @@ body.public #dialogue, body.public #titleScreen { display: none; }
   border: 2px solid var(--brand-dark);
   border-radius: 12px;
 }
+.method-note {
+  margin: -2px 0 8px;
+  font-size: clamp(11px, 3vw, 13px);
+  line-height: 1.45;
+  color: var(--gold);
+}
+.method-note:empty { display: none; }
 .method label {
   display: block;
   margin-bottom: 8px;

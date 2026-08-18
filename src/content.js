@@ -108,7 +108,7 @@ export const NPC_CONTENT = {
           retort: 'Great espresso. Farm still in the red. Try again.'
         }
       ],
-      win: '9 containers to 6 countries in 2 years. Woman of Agribusiness of Brazil, 2018. ENTREPRENEUR BADGE obtained!'
+      win: '9 containers to 6 countries in 2 years \u2014 and 1st place Woman of Agribusiness of Brazil 2018, awarded by the country\u2019s leading agribusiness association. ENTREPRENEUR BADGE obtained!'
     },
     postWin: 'Nine containers. Not bad.'
   },

@@ -2,7 +2,7 @@
 // nickname prompt. Plain DOM — this is a web page, not a game screen.
 
 import * as db from './supabase.js';
-import { YOUTUBE_ID } from '../config.js';
+import { YOUTUBE_ID, EMAIL_DELIVERY_CONFIGURED } from '../config.js';
 
 let el = {};
 let onPlay = () => {};
@@ -23,6 +23,7 @@ export function init({ onStartGame }) {
     loginErr: document.getElementById('loginError'),
     magicEmail: document.getElementById('magicEmail'),
     magicBtn: document.getElementById('btnMagic'),
+    magicNote: document.getElementById('magicNote'),
     oauth: document.getElementById('oauthRow'),
     pwToggle: document.getElementById('pwToggle'),
     pwForm: document.getElementById('pwForm'),
@@ -188,6 +189,11 @@ function bind() {
 
 function showLogin() {
   setLoginError('');
+  // Until custom SMTP is set up, say so here rather than letting someone send
+  // themselves a link that will never arrive.
+  el.magicNote.textContent = EMAIL_DELIVERY_CONFIGURED
+    ? ''
+    : 'Email delivery is still being set up — Google or GitHub is the reliable way in right now.';
   // Only offer what the project actually has switched on.
   el.oauth.querySelectorAll('[data-provider]').forEach(b => {
     b.style.display = db.AUTH_METHODS[b.dataset.provider] ? '' : 'none';
