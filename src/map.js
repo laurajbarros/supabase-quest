@@ -1,21 +1,23 @@
 // The world, built procedurally from a handful of shape helpers.
 //
-// Pass 1 covers Region 1 only:
-//
 //   rows  0..20   REGION 1 — The Beginning. A small town, coffee, three gyms.
 //   row      21   the road out, opened by three badges
-//   rows 22..25   a holding area until Region 2 is built
+//   rows 22..44   REGION 2 — RebelMouse. An office floor, four gyms.
+//   row      44   the League door, opened by all seven badges
+//   rows 45..48   a holding area until Region 3 is built
 //
-// Regions 2 and 3 extend this grid downward in later passes. One grid rather
-// than separate maps with warps: the camera, collision and renderer already
-// handle an arbitrary grid, so stacking costs nothing.
+// Region 3 extends this grid downward in the next pass. One grid rather than
+// separate maps with warps: the camera, collision and renderer already handle
+// an arbitrary grid, so stacking costs nothing.
 
 import { SOLID, kindOf } from './tiles.js';
 
 export const MAP_W = 30;
-export const MAP_H = 26;
+export const MAP_H = 50;
 
 const GATE_ROW = 21;
+const OFFICE = 22;         // Region 2 occupies rows 22..44
+const LEAGUE_ROW = 44;     // the office's back wall, with the League door in it
 
 function mkGrid(w, h, fillName) {
   return Array.from({ length: h }, () => Array(w).fill(fillName));
@@ -66,7 +68,8 @@ function gym(g, opts) {
 export const ROUTE_GATE = { x: 15, y: GATE_ROW };
 export const TOWN_SIGN = { x: 16, y: 18 };
 export const BUS_STOP = { x: 13, y: 7 };
-export const NEXT_SIGN = { x: 16, y: 23 };
+export const LEAGUE_DOOR = { x: 15, y: LEAGUE_ROW };
+export const NEXT_SIGN = { x: 16, y: LEAGUE_ROW + 2 };
 
 export const PLAYER_START = { x: 15, y: 19 };
 
@@ -80,6 +83,7 @@ function build() {
 
   buildTown(g);
   buildGate(g);
+  buildOffice(g);
   buildHolding(g);
   return g;
 }
@@ -125,9 +129,41 @@ function buildGate(g) {
   set(g, ROUTE_GATE.x, ROUTE_GATE.y, 'routeBlock');
 }
 
-// Everything past the gate until Region 2 exists.
+// ---------------------------------------------------------------- Region 2
+//
+// An open-plan floor. The four gyms are meeting rooms — same pink roof and
+// badge plate as the town gyms, because the point of that silhouette is that
+// it means the same thing everywhere.
+function buildOffice(g) {
+  fill(g, 1, OFFICE, MAP_W - 2, LEAGUE_ROW - OFFICE + 1, 'wall');
+  fill(g, 2, OFFICE + 1, MAP_W - 4, LEAGUE_ROW - OFFICE - 1, 'floor');
+
+  // The way in from the town, and a carpeted spine down the floor.
+  set(g, 15, OFFICE, 'floor');
+  fill(g, 14, OFFICE + 1, 3, LEAGUE_ROW - OFFICE - 1, 'carpet');
+  fill(g, 3, OFFICE + 9, MAP_W - 6, 2, 'carpet');
+
+  // Meeting rooms, two near the entrance and two at the back.
+  gym(g, { x: 2,  y: OFFICE + 2,  w: 6, h: 4, doorX: 4 });
+  gym(g, { x: 22, y: OFFICE + 2,  w: 6, h: 4, doorX: 24 });
+  gym(g, { x: 2,  y: OFFICE + 13, w: 6, h: 4, doorX: 4 });
+  gym(g, { x: 22, y: OFFICE + 13, w: 6, h: 4, doorX: 24 });
+
+  // Desks, so the floor reads as somewhere people work.
+  [[9, 25], [10, 25], [19, 25], [20, 25],
+   [9, 29], [10, 29], [19, 29], [20, 29],
+   [9, 38], [10, 38], [19, 38], [20, 38]]
+    .forEach(([x, y]) => set(g, x, y, 'workstation'));
+  [[6, 27], [24, 27], [6, 40], [24, 40]].forEach(([x, y]) => set(g, x, y, 'plant'));
+  set(g, 20, 34, 'coffeeMachine');
+
+  // The League door sits in the back wall. Shut until all seven badges.
+  set(g, LEAGUE_DOOR.x, LEAGUE_DOOR.y, 'doorLocked');
+}
+
+// Everything past the League door until Region 3 exists.
 function buildHolding(g) {
-  fill(g, 15, GATE_ROW + 1, 1, 3, 'path');
+  fill(g, 15, LEAGUE_ROW + 1, 1, 3, 'path');
   set(g, NEXT_SIGN.x, NEXT_SIGN.y, 'sign');
 }
 
@@ -150,20 +186,36 @@ export const NPCS = [
 
   // The Mentor, beside where you wake up. The Rival, at the town entrance.
   { id: 'mentor', char: 'mentor', x: 14, y: 19, dir: 'right', name: 'The Mentor' },
-  { id: 'rival1', char: 'rival',  x: 17, y: 20, dir: 'left',  name: 'Rival' }
+  { id: 'rival1', char: 'rival',  x: 17, y: 20, dir: 'left',  name: 'Rival' },
+
+  // ---- Region 2: RebelMouse
+  { id: 'listening', char: 'featureRequest', x: 4,  y: OFFICE + 5,  dir: 'down', name: 'The Feature Request' },
+  { id: 'order',     char: 'inbox',          x: 24, y: OFFICE + 5,  dir: 'down', name: 'The Inbox' },
+  { id: 'architect', char: 'dejaVu',         x: 4,  y: OFFICE + 16, dir: 'down', name: 'D\u00e9j\u00e0 Vu' },
+  { id: 'ai',        char: 'industry',       x: 24, y: OFFICE + 16, dir: 'down', name: 'The Industry' },
+
+  { id: 'hoodie',        char: 'hoodie',        x: 8,  y: 26, dir: 'right', name: 'Engineer in a Hoodie' },
+  { id: 'salesRep',      char: 'salesRep',      x: 21, y: 26, dir: 'left',  name: 'Sales Rep' },
+  { id: 'coffeeMachine', char: 'coffeeDrinker', x: 20, y: 35, dir: 'up',    name: 'At the Coffee Machine' },
+  { id: 'onACall',       char: 'onACall',       x: 9,  y: 39, dir: 'right', name: 'Person on a Call' },
+
+  { id: 'rival2', char: 'rival', x: 17, y: 24, dir: 'left', name: 'Rival' }
 ];
 
-export const GYM_IDS = ['determination', 'entrepreneur', 'bridge'];
+export const GYM_IDS = ['determination', 'entrepreneur', 'bridge',
+                        'listening', 'order', 'architect', 'ai'];
 
 export const grid = build();
 
 export let collision = [];
 
-export function rebuildCollision({ region2Open = false } = {}) {
+export function rebuildCollision({ region2Open = false, leagueOpen = false } = {}) {
   if (region2Open) grid[ROUTE_GATE.y][ROUTE_GATE.x] = 'gateOpen';
+  if (leagueOpen) grid[LEAGUE_DOOR.y][LEAGUE_DOOR.x] = 'door';
 
   collision = grid.map((row, y) => row.map((name, x) => {
     if (region2Open && x === ROUTE_GATE.x && y === ROUTE_GATE.y) return false;
+    if (leagueOpen && x === LEAGUE_DOOR.x && y === LEAGUE_DOOR.y) return false;
     return SOLID.has(name);
   }));
   for (const npc of NPCS) collision[npc.y][npc.x] = true;
@@ -226,17 +278,26 @@ rebuildCollision();
     if (missing.length) throw new Error(`Map (${stage}): unreachable — ${missing.join(', ')}`);
   };
 
+  const region1Ids = NPCS.filter(n => n.y < GATE_ROW).map(n => n.id);
+  const region2Ids = NPCS.filter(n => n.y > GATE_ROW).map(n => n.id);
+
   const closed = reachabilityReport({});
-  must(closed, NPCS.map(n => n.id).concat(['town-sign', 'bus-stop']), 'region 1');
-  if (closed.has('next-sign')) {
-    throw new Error('Map: the road out is open before three badges');
+  must(closed, region1Ids.concat(['town-sign', 'bus-stop']), 'region 1');
+  const leaked = region2Ids.filter(id => closed.has(id));
+  if (leaked.length) throw new Error(`Map: RebelMouse reachable before three badges — ${leaked.join(', ')}`);
+
+  const region2 = reachabilityReport({ region2Open: true });
+  must(region2, region2Ids, 'region 2');
+  if (region2.has('next-sign')) {
+    throw new Error('Map: the League door is open before seven badges');
   }
 
-  const open = reachabilityReport({ region2Open: true });
-  must(open, ['next-sign'], 'gate open');
+  const all = reachabilityReport({ region2Open: true, leagueOpen: true });
+  must(all, ['next-sign'], 'league open');
 
   // Reset to the closed state for the actual game.
   grid[ROUTE_GATE.y][ROUTE_GATE.x] = 'routeBlock';
+  grid[LEAGUE_DOOR.y][LEAGUE_DOOR.x] = 'doorLocked';
   rebuildCollision({});
 }
 

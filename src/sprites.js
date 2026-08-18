@@ -151,6 +151,40 @@ const CAST = {
   girlLaptop: () => makeHuman({
     skin: SKIN.deep, hair: HAIR.black, longHair: true,
     shirt: '#7a4a8a', pants: '#2e2438', shoes: '#1c1c1c', glasses: C.ink
+  }),
+
+  // ---- Region 2 gym leaders ----------------------------------------------
+  featureRequest: () => makeHuman({
+    skin: SKIN.light, hair: HAIR.brown, shirt: '#3a5a8a', pants: '#2e3a4a',
+    shoes: '#1e2028', glasses: C.ink
+  }),
+  inbox: () => makeHuman({
+    skin: SKIN.deep, hair: HAIR.black, longHair: true,
+    shirt: '#8a3a4a', pants: '#3a2430', shoes: '#1c1418'
+  }),
+  dejaVu: () => makeHuman({
+    skin: SKIN.mid, hair: HAIR.grey, shirt: '#4a7a6a', pants: '#2e4038',
+    shoes: '#1a2420', glasses: C.ink
+  }),
+  industry: () => makeHuman({
+    skin: SKIN.darker, hair: HAIR.black, shirt: '#2e2e3a', pants: '#22222c',
+    shoes: '#121216', coat: '#3a3a4a'
+  }),
+
+  // ---- Region 2 flavour ---------------------------------------------------
+  hoodie: () => makeHuman({
+    skin: SKIN.light, hair: HAIR.brown, shirt: '#5a5a6a', pants: '#2c2c38',
+    shoes: '#1a1a20', hat: '#5a5a6a'
+  }),
+  salesRep: () => makeHuman({
+    skin: SKIN.mid, hair: '#6b4423', shirt: '#d8b038', pants: '#33384a', shoes: '#242424'
+  }),
+  coffeeDrinker: () => makeHuman({
+    skin: SKIN.deep, hair: HAIR.black, shirt: '#6a8a9a', pants: '#3a4450', shoes: '#20242a'
+  }),
+  onACall: () => makeHuman({
+    skin: SKIN.light, hair: HAIR.grey, longHair: true,
+    shirt: '#7a6a9a', pants: '#33384a', shoes: '#242424'
   })
 };
 

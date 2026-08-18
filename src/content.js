@@ -194,6 +194,189 @@ export const NPC_CONTENT = {
       'Still collecting badges?',
       'I optimized my LinkedIn instead.'
     ]
+  },
+  // ============================================ REGION 2 — REBELMOUSE
+
+  listening: {
+    gym: true,
+    region: 2,
+    name: 'The Feature Request',
+    badge: 'LISTENING',
+    hint: 'First meeting room on the left.',
+    beats: [
+      'Engineering ships exactly what clients ask for.',
+      'Clients keep coming back unhappy.',
+      'Nobody can explain why.'
+    ],
+    quiz: {
+      question: 'What do you do?',
+      options: [
+        {
+          text: 'Pitch your boss a new function that digs into what clients actually need',
+          correct: true
+        },
+        {
+          text: 'Ship the requests faster — maybe volume fixes it',
+          retort: "Now they're unhappy sooner. Try again."
+        },
+        {
+          text: 'Blame the clients for not writing better tickets',
+          retort: 'Technically correct. Commercially fatal. Try again.'
+        }
+      ],
+      win: 'Your boss says yes. You create the Solutions Architecture team. LISTENING BADGE obtained!'
+    },
+    postWin: "A team that didn't exist until someone asked for it."
+  },
+
+  order: {
+    gym: true,
+    region: 2,
+    name: 'The Inbox',
+    badge: 'ORDER',
+    hint: 'First meeting room on the right.',
+    beats: [
+      'Support is chaos. Clients message whoever they can find.',
+      "Sales, engineers, someone's personal LinkedIn.",
+      'At 2 AM.'
+    ],
+    quiz: {
+      question: 'What do you do?',
+      options: [
+        {
+          text: 'Restructure the team so requests reach the right people, with quality',
+          correct: true
+        },
+        {
+          text: 'Tell everyone to "just be more responsive"',
+          retort: 'Everyone is now responsive and nobody is accountable. Try again.'
+        },
+        {
+          text: 'Add a chatbot and hope for the best',
+          retort: 'The bot said "I understand your frustration" 400 times. Try again.'
+        }
+      ],
+      win: "Order restored. You're promoted to Director of Technical Support. ORDER BADGE obtained!"
+    },
+    postWin: 'Nobody DMs the sales team on Sundays anymore.'
+  },
+
+  architect: {
+    gym: true,
+    region: 2,
+    name: 'D\u00e9j\u00e0 Vu',
+    badge: 'ARCHITECT',
+    hint: 'Back of the floor, on the left.',
+    beats: [
+      "You're back — now as Director of Solutions Architecture,",
+      'leading the team you built.',
+      'And you notice something.',
+      'Every client has a "unique" problem.',
+      'They are the same seven problems wearing different hats.'
+    ],
+    quiz: {
+      question: 'What do you do?',
+      options: [
+        {
+          text: 'Build modular, agnostic solutions that work for architects and clients alike',
+          correct: true
+        },
+        {
+          text: 'Keep building one-off custom work for every account',
+          retort: 'Your team is now 100% maintenance and 0% progress. Try again.'
+        },
+        {
+          text: 'Write a very long internal doc about it and move on',
+          retort: 'The doc has 3 views. Two are yours. Try again.'
+        }
+      ],
+      win: 'Solve once, reuse everywhere. ARCHITECT BADGE obtained!'
+    },
+    postWin: 'Same seven problems. Now they have answers.'
+  },
+
+  ai: {
+    gym: true,
+    region: 2,
+    name: 'The Industry',
+    badge: 'AI',
+    hint: 'Back of the floor, on the right.',
+    beats: [
+      'The industry is shifting fast.',
+      'The company needs new products.',
+      'Everyone can see it.',
+      'Nobody wants to say it out loud.'
+    ],
+    quiz: {
+      question: 'What do you do?',
+      options: [
+        {
+          text: 'Take the proposal straight to the CEO and offer to lead it',
+          correct: true
+        },
+        {
+          text: 'Wait for leadership to figure it out',
+          retort: "They're waiting for someone too. That someone was you. Try again."
+        },
+        {
+          text: 'Optimize the existing product 3% harder',
+          retort: 'Excellent margins on a shrinking market. Try again.'
+        }
+      ],
+      win: 'You become General Manager of AI products. AI BADGE obtained!'
+    },
+    postWin: 'Someone had to say it out loud.'
+  },
+
+  // ============================================ FLAVOUR — REGION 2
+
+  hoodie: {
+    region: 2,
+    name: 'Engineer in a Hoodie',
+    beats: [
+      'Ticket says build a dropdown.',
+      "I've built four.",
+      'They keep opening new tickets.'
+    ]
+  },
+
+  salesRep: {
+    region: 2,
+    name: 'Sales Rep',
+    beats: [
+      'Have you seen support?',
+      "A client just DM'd me on a Sunday.",
+      'Just\u2026 anyone. Anyone at all.'
+    ]
+  },
+
+  coffeeMachine: {
+    region: 2,
+    name: 'Someone at the Coffee Machine',
+    beats: [
+      'Third client this month with the exact same problem.',
+      'Weird, right?',
+      'Anyway.'
+    ]
+  },
+
+  onACall: {
+    region: 2,
+    name: 'Person on a Call',
+    beats: [
+      "Everything's fine.",
+      'Numbers are flat but flat is the new up.'
+    ]
+  },
+
+  rival2: {
+    region: 2,
+    name: 'Rival',
+    rival: true,
+    beats: [
+      'Four badges?',
+      'I have three certifications and a newsletter.'
+    ]
   }
 };
 
@@ -217,9 +400,30 @@ export const REGION1_CLEAR_BEATS = [
   'So do you.'
 ];
 
-// Placeholder past the gate until Region 2 is built.
+export const LEAGUE_LOCKED_BEATS = [
+  'THE SUPABASE LEAGUE',
+  'All seven badges open this door.'
+];
+
+// The tonal pivot. Everything behind is real; everything ahead is not.
+export const PRESENT_MOMENT_BEATS = [
+  { card: 'ALL 7 BADGES' },
+  'Stop for a second. Look at where you are.',
+  { pause: 700 },
+  'Everything you just played — that all really happened.',
+  { pause: 500 },
+  'This is the present moment.',
+  "What comes next hasn't happened yet.",
+  'It\u2019s the future Laura would like to happen.',
+  { pause: 500 },
+  'Ahead of you: the SUPABASE LEAGUE.',
+  'No badges here — just four trials.',
+  'Ready?'
+];
+
+// Placeholder past the League door until Region 3 is built.
 export const NEXT_BUILD_BEATS = [
-  'REBELMOUSE',
-  'This region arrives in the next build.',
+  'THE SUPABASE LEAGUE',
+  'The four trials arrive in the next build.',
   'Thanks for testing.'
 ];

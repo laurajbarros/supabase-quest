@@ -11,12 +11,13 @@ import * as progress from './progress.js';
 import { setMonochrome, isMonochrome, TS } from './painter.js';
 import { player, update as updatePlayer, facingTile, resetPlayer } from './player.js';
 import {
-  NPCS, GYM_IDS, ROUTE_GATE, TOWN_SIGN, BUS_STOP, NEXT_SIGN,
+  NPCS, GYM_IDS, ROUTE_GATE, LEAGUE_DOOR, TOWN_SIGN, BUS_STOP, NEXT_SIGN,
   npcAt, rebuildCollision, grid
 } from './map.js';
 import {
   NPC_CONTENT, BADGE_ORDER, MENTOR_BEATS,
-  REGION1_CLEAR_BEATS, REGION2_LOCKED_BEATS, NEXT_BUILD_BEATS
+  REGION1_CLEAR_BEATS, REGION2_LOCKED_BEATS, LEAGUE_LOCKED_BEATS,
+  PRESENT_MOMENT_BEATS, NEXT_BUILD_BEATS
 } from './content.js';
 import { sfx, isMuted, setMuted } from './audio.js';
 import * as landing from './landing.js';
@@ -76,6 +77,9 @@ function targetInFront() {
   if (f.x === ROUTE_GATE.x && f.y === ROUTE_GATE.y && !progress.run.region2Open) {
     return { kind: 'sign', name: 'ROAD', beats: REGION2_LOCKED_BEATS };
   }
+  if (f.x === LEAGUE_DOOR.x && f.y === LEAGUE_DOOR.y && !progress.run.leagueOpen) {
+    return { kind: 'sign', name: 'DOOR', beats: LEAGUE_LOCKED_BEATS };
+  }
   return null;
 }
 
@@ -130,8 +134,7 @@ function openTalk(beats, opts = {}) {
       for (const [x, y, tile] of changes) {
         if (grid[y] && grid[y][x] !== undefined) grid[y][x] = tile;
       }
-      rebuildCollision({ region2Open: progress.run.region2Open });
-      render.bakeMap();
+      refreshWorld();
     },
     ...opts
   });
@@ -146,17 +149,19 @@ function finishGym(npc, { firstTry }) {
   screens.toast(`${content.badge} BADGE · +${firstTry ? 100 : 50}`, 3000);
   updateHud();
 
-  if (result.region2JustOpened) {
-    rebuildCollision({ region2Open: true });
-    render.bakeMap();
+  if (result.region2JustOpened || result.leagueJustOpened) {
+    refreshWorld();
+    const league = result.leagueJustOpened;
     setTimeout(() => {
       sfx.unlock();
-      openTalk(REGION1_CLEAR_BEATS, {
+      openTalk(league ? PRESENT_MOMENT_BEATS : REGION1_CLEAR_BEATS, {
         name: 'The Mentor',
         speaker: 'mentor',
         onDone: () => {
-          screens.setObjective('The road south is open.');
-          screens.toast('The road out of town is open.', 3200);
+          screens.setObjective(league
+            ? 'The League door at the back of the floor is open.'
+            : 'The road south is open.');
+          screens.toast(league ? 'The League door is open.' : 'The road out of town is open.', 3200);
         }
       });
     }, 2400);
@@ -271,7 +276,10 @@ function showResults() {
 }
 
 function refreshWorld() {
-  rebuildCollision({ region2Open: progress.run.region2Open });
+  rebuildCollision({
+    region2Open: progress.run.region2Open,
+    leagueOpen: progress.run.leagueOpen
+  });
   render.bakeMap();
 }
 

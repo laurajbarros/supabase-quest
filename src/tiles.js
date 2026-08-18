@@ -172,9 +172,38 @@ const DEFS = {
       p.set(cx - 2, cy + 1, C.danger);
     }
   },
+  // ---- Region 2: the office ----------------------------------------------
   floor(p) {
     p.rect(0, 0, TS, TS, '#e0d8c8');
     p.hline(0, 0, TS, '#c8c0b0').vline(0, 0, TS, '#c8c0b0');
+  },
+  carpet(p) {
+    p.rect(0, 0, TS, TS, '#4a5a6a');
+    p.speckle(18, ['#41505e', '#556678'], 7);
+  },
+  // A desk with two monitors: the unit an open-plan floor is measured in.
+  workstation(p) {
+    p.rect(0, 0, TS, TS, '#e0d8c8');
+    p.rect(1, 5, 14, 8, C.trunkLight);
+    p.rect(1, 5, 14, 2, '#c9a06a');
+    p.rect(2, 2, 5, 4, C.night);
+    p.rect(3, 3, 3, 2, C.glass);
+    p.rect(9, 2, 5, 4, C.night);
+    p.rect(10, 3, 3, 2, C.brand);
+    p.rect(2, 13, 2, 3, C.trunk).rect(12, 13, 2, 3, C.trunk);
+  },
+  plant(p) {
+    p.rect(0, 0, TS, TS, '#e0d8c8');
+    p.rect(5, 11, 6, 5, '#b06030');
+    p.circle(8, 7, 4, C.leafMid).circle(6, 6, 2, C.leafLight);
+  },
+  coffeeMachine(p) {
+    p.rect(0, 0, TS, TS, '#e0d8c8');
+    p.rect(3, 2, 10, 12, C.metalDark);
+    p.rect(4, 3, 8, 4, C.night);
+    p.set(6, 5, C.danger).set(9, 5, C.brand);
+    p.rect(5, 9, 6, 3, C.metalLight);
+    p.rect(6, 10, 4, 2, '#6b3f1c');
   },
   // The road out of the region, shut until the badges are in.
   routeBlock(p) {
@@ -258,7 +287,7 @@ export const SOLID = new Set([
   'gymRoofTop', 'gymRoofBottom', 'gymDoor', 'gymBanner',
   'wall', 'window', 'door', 'doorLab', 'doorLocked',
   'routeGate', 'routeBlock', 'crate', 'desk', 'machine', 'shelf', 'signpost',
-  'coffee'
+  'coffee', 'workstation', 'plant', 'coffeeMachine'
 ]);
 
 // Minimap categories. Sampling average sprite colour doesn't work — every tile
@@ -266,7 +295,7 @@ export const SOLID = new Set([
 // grass. Listing the exceptions is both simpler and correct.
 const KIND = {
   grass: 'ground', grassAlt: 'ground', flowers: 'ground',
-  path: 'road', plaza: 'road', gateOpen: 'road', floor: 'floor',
+  path: 'road', plaza: 'road', gateOpen: 'road', floor: 'floor', carpet: 'floor',
   water: 'water',
   tree: 'veg', bush: 'veg',
   door: 'door', doorLab: 'door', doorLocked: 'wall', gymDoor: 'door',
